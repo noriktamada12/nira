@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "NIRA",
+    "slug": "nira",
+    "version": "2.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "nira",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#ffffff",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mada.nira",
+      "infoPlist": {
+        "NSCameraUsageDescription": "NIRA memakai kamera untuk memotret makanan surplus yang mau kamu jual.",
+        "NSPhotoLibraryUsageDescription": "NIRA memakai galeri untuk memilih foto makanan surplus.",
+        "NSLocationWhenInUseUsageDescription": "NIRA memakai lokasi untuk menampilkan warung terdekat di peta."
+      }
+    },
+    "android": {
+      "package": "com.mada.nira",
+      "versionCode": 3,
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS",
+        "VIBRATE",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-status-bar",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1B7A3E"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "NIRA memakai galeri untuk memilih foto makanan surplus.",
+          "cameraPermission": "NIRA memakai kamera untuk memotret makanan surplus."
+        }
+      ],
+      "expo-font"
+    ]
+  }
+}

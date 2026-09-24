@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+
+  <!-- ============ CINCIN JAM (utuh 360 derajat) ============ -->
+  <circle cx="256" cy="256" r="198.0" fill="none"
+          stroke="#1B7A3E" stroke-width="28.0"/>
+
+  <!-- ============ PENANDA JAM 12 (menempel di cincin dalam) ============ -->
+  <rect x="242.0" y="76.0" width="28.0" height="40.0"
+        rx="14.0" fill="#F58220"/>
+
+  <!-- ============ JARUM JAM ============ -->
+  <!-- jarum jam (pendek) ke arah 10 -->
+  <line x1="256" y1="236.0" x2="182.0" y2="182.0"
+        stroke="#1B7A3E" stroke-width="21.0" stroke-linecap="round"/>
+  <!-- jarum menit (panjang) ke arah 2 -->
+  <line x1="256" y1="236.0" x2="318.0" y2="150.0"
+        stroke="#1B7A3E" stroke-width="21.0" stroke-linecap="round"/>
+  <circle cx="256" cy="236.0" r="19.0" fill="#1B7A3E"/>
+
+  <!-- ============ MANGKUK ============ -->
+  <path d="M 150.0 316.0
+           L 362.0 316.0
+           C 362.0 378.0 322.0 410.0 256 410.0
+           C 190.0 410.0 150.0 378.0 150.0 316.0 Z"
+        fill="#F5EBD9" stroke="#1B7A3E" stroke-width="9.0"/>
+  <!-- bibir mangkuk -->
+  <rect x="142.0" y="304.0" width="228.0" height="22.0"
+        rx="11.0" fill="#F5EBD9" stroke="#1B7A3E" stroke-width="9.0"/>
+
+  <!-- ============ DAUN (2 bidang rata, tanpa urat) ============ -->
+  <!-- helai belakang -->
+  <path d="M 286.0 286.0
+           C 296.0 228.0 344.0 200.0 388.0 206.0
+           C 386.0 262.0 346.0 294.0 286.0 290.0 Z"
+        fill="#46A856"/>
+  <!-- helai depan -->
+  <path d="M 268.0 292.0
+           C 276.0 240.0 314.0 214.0 350.0 219.0
+           C 348.0 266.0 316.0 292.0 268.0 294.0 Z"
+        fill="#1B7A3E"/>
+  <!-- tangkai: menyambung bibir mangkuk ke daun -->
+  <path d="M 272.0 306.0 C 276.0 292.0 282.0 282.0 290.0 276.0"
+        fill="none" stroke="#1B7A3E" stroke-width="10.0" stroke-linecap="round"/>
+
+  <!-- ============ CENTANG (di dalam mangkuk, tidak menumpuk apa pun) ============ -->
+  <!-- cakram oranye: bagian dalam mangkuk -->
+  <circle cx="256" cy="362.0" r="56.0" fill="#F58220"/>
+  <path d="M 230.0 362.0 L 250.0 382.0 L 284.0 340.0"
+        fill="none" stroke="#FFFFFF" stroke-width="19.0"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
