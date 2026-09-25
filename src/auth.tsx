@@ -126,13 +126,33 @@ interface Persisted {
   sessionUserId: string | null;
 }
 
+/**
+ * Validasi satu akun simpanan. Sama seperti state toko: data auth lama yang
+ * rusak (mis. role tak dikenal) dibuang supaya layar tidak crash saat baca
+ * user.role / user.verify.
+ */
+function validUser(x: unknown): x is User {
+  const u = x as User;
+  return (
+    !!u &&
+    typeof u.id === 'string' &&
+    typeof u.email === 'string' &&
+    typeof u.pass === 'string' &&
+    (u.role === 'consumer' || u.role === 'merchant') &&
+    (u.verify === 'unverified' || u.verify === 'pending' || u.verify === 'verified' || u.verify === 'rejected')
+  );
+}
+
 async function load(): Promise<Persisted> {
   try {
     const raw = await AsyncStorage.getItem(KEY);
     if (!raw) return { users: seedUsers(), sessionUserId: null };
     const parsed = JSON.parse(raw) as Persisted;
-    if (!parsed.users?.length) return { users: seedUsers(), sessionUserId: null };
-    return parsed;
+    if (!Array.isArray(parsed.users)) return { users: seedUsers(), sessionUserId: null };
+    const users = parsed.users.filter(validUser);
+    if (!users.length) return { users: seedUsers(), sessionUserId: null };
+    const sessionOk = users.some((u) => u.id === parsed.sessionUserId);
+    return { users, sessionUserId: sessionOk ? parsed.sessionUserId : null };
   } catch {
     return { users: seedUsers(), sessionUserId: null };
   }

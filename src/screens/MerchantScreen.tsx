@@ -52,32 +52,40 @@ function UploadSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
   const valid = title.trim().length >= 3 && num(original) > 0 && num(price) > 0 && num(price) < num(original) && num(portions) > 0;
 
   async function pickPhoto() {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Izin ditolak', 'Izinkan akses galeri untuk memilih foto makanan.');
-      return;
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Izin ditolak', 'Izinkan akses galeri untuk memilih foto makanan.');
+        return;
+      }
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.7,
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+      if (!res.canceled && res.assets[0]) setPhoto(res.assets[0]);
+    } catch {
+      Alert.alert('Galeri gagal dibuka', 'Coba lagi sebentar lagi.');
     }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-      allowsEditing: true,
-      aspect: [4, 3],
-    });
-    if (!res.canceled && res.assets[0]) setPhoto(res.assets[0]);
   }
 
   async function takePhoto() {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Izin ditolak', 'Izinkan akses kamera untuk memotret makanan.');
-      return;
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Izin ditolak', 'Izinkan akses kamera untuk memotret makanan.');
+        return;
+      }
+      const res = await ImagePicker.launchCameraAsync({
+        quality: 0.7,
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+      if (!res.canceled && res.assets[0]) setPhoto(res.assets[0]);
+    } catch {
+      Alert.alert('Kamera gagal dibuka', 'Coba lagi sebentar lagi.');
     }
-    const res = await ImagePicker.launchCameraAsync({
-      quality: 0.7,
-      allowsEditing: true,
-      aspect: [4, 3],
-    });
-    if (!res.canceled && res.assets[0]) setPhoto(res.assets[0]);
   }
 
   function submit() {

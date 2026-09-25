@@ -4,10 +4,9 @@
  * Di sini konsumen memilih jumlah porsi lalu memesan. Setelah dipesan,
  * muncul kode pickup yang ditunjukkan ke penjual saat mengambil.
  */
-import React, { useState } from 'react';
-import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_DEFAULT } from '../maps';
 import { Badge, Button, Card, Divider, Icon, T } from '../ui';
 import { angkaDesimal, resolvePhoto, rupiah } from '../data';
 import { palette, radius, spacing, type } from '../theme';
@@ -15,44 +14,32 @@ import { useStore } from '../store';
 import type { Order } from '../types';
 
 function discountPct(o: number, p: number) {
+  if (!Number.isFinite(o) || !Number.isFinite(p) || o <= 0) return 0;
   return Math.round(((o - p) / o) * 100);
 }
 
-/** Peta lokasi penjual. Di web (tanpa Google Maps key) pakai fallback statis. */
-function LocationMap({ lat, lng, title, address }: { lat: number; lng: number; title: string; address: string }) {
+/** Lokasi penjual: kotak statis yang membuka Google Maps saat diketuk.
+ *
+ * Sebelumnya di sini ada MapView native (react-native-maps). Itu tersangka
+ * utama crash: tanpa API key Google di AndroidManifest, peta native belum
+ * sempat dilepas saat layar ditutup -> force close. Sekarang tidak ada
+ * komponen peta sama sekali, jadi tidak ada lagi yang bisa bocor. */
+function LocationMap({ lat, lng, address }: { lat: number; lng: number; address: string }) {
   const openExternal = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     void Linking.openURL(url);
   };
 
-  if (Platform.OS === 'web') {
-    return (
-      <Pressable onPress={openExternal} style={styles.mapFallbackPress}>
-        <View style={[styles.mapFallback, { alignItems: 'center', justifyContent: 'center' }]}>
-          <Icon name="map-marker-outline" size={34} color={palette.accent} />
-          <T style={[type.bodyStrong, { marginTop: 6 }]}>Lihat lokasi di peta</T>
-          <T tone="muted" style={[type.tiny, { marginTop: 2, textAlign: 'center' }]}>
-            {address} · buka Google Maps
-          </T>
-        </View>
-      </Pressable>
-    );
-  }
-
   return (
-    <View style={styles.mapWrap}>
-      <MapView
-        style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        initialRegion={{ latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
-        scrollEnabled={false}
-        zoomEnabled={false}
-        toolbarEnabled={false}
-      >
-        <Marker coordinate={{ latitude: lat, longitude: lng }} title={title} description={address} />
-      </MapView>
-      <Button label="Buka di Google Maps" variant="secondary" onPress={openExternal} style={{ marginTop: spacing.sm }} />
-    </View>
+    <Pressable onPress={openExternal} style={styles.mapFallbackPress}>
+      <View style={[styles.mapFallback, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Icon name="map-marker-outline" size={34} color={palette.accent} />
+        <T style={[type.bodyStrong, { marginTop: 6 }]}>Lihat lokasi di peta</T>
+        <T tone="muted" style={[type.tiny, { marginTop: 2, textAlign: 'center' }]}>
+          {address} · buka Google Maps
+        </T>
+      </View>
+    </Pressable>
   );
 }
 
@@ -70,6 +57,10 @@ export default function ItemDetailScreen({
   const item = getItem(itemId);
   const [qty, setQty] = useState(1);
   const [memproses, setMemproses] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
 
   if (!item) {
     return (
@@ -91,24 +82,30 @@ export default function ItemDetailScreen({
   /**
    * Pesan porsi.
    *
-   * Kenapa tidak langsung navigasi seperti sebelumnya:
-   *   Layar ini memuat MapView (peta lokasi penjual). Dulu, setelah pesanan
-   *   dibuat, layar langsung dilepas saat peta masih menggambar -> di Android
-   *   peta native belum sempat dilepas dan aplikasi FORCE CLOSE.
-   *
-   *   Sekarang: tombol dikunci sebentar ("Memproses…"), beri kesempatan
-   *   render berikutnya selesai, baru pindah layar. Peta juga langsung
-   *   disembunyikan begitu tombol ditekan.
+   * Perbaikan anti-crash (lapis 2):
+   *   - Timer disimpan di ref dan dibersihkan saat layar dilepas, supaya
+   *     callback tidak jalan di layar yang sudah tidak ada.
+   *   - Kalau stok ternyata habis duluan, kasih tahu user (bukan diam saja
+   *     yang tombolnya nyangkut di "Memproses…").
+   *   - Alert pengganti navigasi pop-up, karena layar tujuan tampil via
+   *     onOrdered (setTab('orders')) bukan via Alert berlapis.
    */
   const pesan = () => {
     if (habis || memproses) return;
     setMemproses(true);
-    setTimeout(() => {
+    timer.current = setTimeout(() => {
+      timer.current = null;
       try {
         const order = placeOrder(item.id, qty);
-        if (order) onOrdered(order);
+        if (order) {
+          onOrdered(order);
+        } else {
+          setMemproses(false);
+          Alert.alert('Stok berubah', 'Porsi sudah habis atau tidak cukup. Coba jumlah lebih kecil.');
+        }
       } catch {
         setMemproses(false);
+        Alert.alert('Gagal memesan', 'Coba lagi sebentar lagi.');
       }
     }, 60);
   };
@@ -218,17 +215,14 @@ export default function ItemDetailScreen({
           </T>
         </Card>
 
-        {/* Peta lokasi penjual — disembunyikan saat memproses supaya aman
-            ketika layar dilepas (Android crash kalau peta aktif saat unmount) */}
-        {!memproses && (
-          <Card style={{ marginTop: spacing.lg }}>
-            <T style={type.bodyStrong}>Lokasi pengambilan</T>
-            <T tone="muted" style={[type.small, { marginTop: 2 }]}>{m.address}</T>
-            <View style={{ marginTop: spacing.md }}>
-              <LocationMap lat={m.lat} lng={m.lng} title={m.name} address={m.address} />
-            </View>
-          </Card>
-        )}
+        {/* Lokasi pengambilan: kotak statis -> buka Google Maps. */}
+        <Card style={{ marginTop: spacing.lg }}>
+          <T style={type.bodyStrong}>Lokasi pengambilan</T>
+          <T tone="muted" style={[type.small, { marginTop: 2 }]}>{m.address}</T>
+          <View style={{ marginTop: spacing.md }}>
+            <LocationMap lat={m.lat} lng={m.lng} address={m.address} />
+          </View>
+        </Card>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(spacing.md, insets.bottom + 4) }]}>
@@ -258,8 +252,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden', marginBottom: spacing.lg,
   },
   heroPhotoImg: { width: '100%', height: '100%' },
-  mapWrap: { marginTop: spacing.sm },
-  map: { width: '100%', height: 170, borderRadius: radius.sm, borderWidth: 1, borderColor: palette.border },
   mapFallback: {
     width: '100%', height: 170, borderRadius: radius.sm, borderWidth: 1, borderColor: palette.border,
     backgroundColor: palette.surfaceAlt,

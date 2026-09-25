@@ -13,6 +13,7 @@ import { useStore } from '../store';
 import type { SurplusItem } from '../types';
 
 function discountPct(original: number, price: number): number {
+  if (!Number.isFinite(original) || !Number.isFinite(price) || original <= 0) return 0;
   return Math.round(((original - price) / original) * 100);
 }
 

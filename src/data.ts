@@ -217,13 +217,53 @@ export interface AppState {
 
 export const initialState: AppState = { items: SEED_ITEMS, orders: [] };
 
+const ORDER_STATUS = new Set(['pending', 'paid', 'picked_up', 'cancelled']);
+
+/**
+ * Validasi satu item simpanan.
+ *
+ * Data lama di AsyncStorage bisa rusak / dari skema lama (mis. porsi jadi
+ * string, harga NaN). Tanpa validasi, satu baris rusak ikut ke-render dan
+ * aplikasi force close di layar Jelajahi/Detail. Baris rusak dibuang,
+ * yang sehat tetap dipakai.
+ */
+function validItem(x: unknown): x is SurplusItem {
+  const i = x as SurplusItem;
+  return (
+    !!i &&
+    typeof i.id === 'string' &&
+    typeof i.merchantId === 'string' &&
+    typeof i.title === 'string' &&
+    Number.isFinite(i.price) &&
+    Number.isFinite(i.originalPrice) &&
+    Number.isFinite(i.portions) &&
+    typeof i.icon === 'string'
+  );
+}
+
+function validOrder(x: unknown): x is Order {
+  const o = x as Order;
+  return (
+    !!o &&
+    typeof o.id === 'string' &&
+    typeof o.itemId === 'string' &&
+    typeof o.code === 'string' &&
+    Number.isFinite(o.qty) &&
+    Number.isFinite(o.totalPrice) &&
+    ORDER_STATUS.has(o.status)
+  );
+}
+
 export async function loadState(): Promise<AppState> {
   try {
     const raw = await AsyncStorage.getItem(KEY);
     if (!raw) return initialState;
     const parsed = JSON.parse(raw) as AppState;
-    if (!parsed.items?.length) return initialState;
-    return parsed;
+    if (!Array.isArray(parsed.items)) return initialState;
+    const items = parsed.items.filter(validItem);
+    if (!items.length) return initialState;
+    const orders = Array.isArray(parsed.orders) ? parsed.orders.filter(validOrder) : [];
+    return { items, orders };
   } catch {
     return initialState;
   }
