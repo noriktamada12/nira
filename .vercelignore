@@ -1,0 +1,11 @@
+node_modules
+.expo
+android
+*.apk
+shots
+_chrome_cek
+_build*_log.txt
+_sdk_*.bat
+_ndk_*.bat
+*.ps1
+nul
