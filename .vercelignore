@@ -9,3 +9,5 @@ _sdk_*.bat
 _ndk_*.bat
 *.ps1
 nul
+
+*.apk

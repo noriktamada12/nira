@@ -18,3 +18,9 @@ _y.txt
 shots/
 *.png
 !assets/**/*.png
+
+.vercel
+
+*.apk
+_share_apk.js
+_share_apk.py
