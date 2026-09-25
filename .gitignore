@@ -24,3 +24,5 @@ shots/
 *.apk
 _share_apk.js
 _share_apk.py
+
+.env*

@@ -11,3 +11,7 @@ _ndk_*.bat
 nul
 
 *.apk
+
+.vercel
+_android_lama
+.git
