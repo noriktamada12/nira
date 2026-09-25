@@ -6,3 +6,15 @@ ios/
 *.log
 nul
 .env*.local
+_android_lama/
+_chrome_cek/
+_build*_log.txt
+_web_log.txt
+_sdk_*.bat
+_ndk_*.bat
+_fw_check.ps1
+_sdk_run.py
+_y.txt
+shots/
+*.png
+!assets/**/*.png
