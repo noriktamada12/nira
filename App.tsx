@@ -12,14 +12,25 @@
  */
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/inter';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 import { StoreProvider, useStore } from './src/store';
 import { AuthProvider, useAuth } from './src/auth';
 import { initNotifications, requestNotificationPermission } from './src/notif';
 import { palette, spacing, type } from './src/theme';
-import { Icon, T } from './src/ui';
+import { Icon, T, TabBar } from './src/ui';
 import type { IconName } from './src/ui';
 
 import ExploreScreen from './src/screens/ExploreScreen';
@@ -34,43 +45,15 @@ import VerifyScreen from './src/screens/VerifyScreen';
 
 type ConsumerTab = 'explore' | 'orders' | 'impact' | 'profile';
 
-function TabBar({
-  tabs,
-  active,
-  onChange,
-}: {
-  tabs: { key: string; label: string; icon: IconName }[];
-  active: string;
-  onChange: (k: string) => void;
-}) {
-  const insets = useSafeAreaInsets();
-  return (
-    <View style={[styles.tabbar, { paddingBottom: Math.max(6, insets.bottom) }]}>
-      {tabs.map((t) => {
-        const on = t.key === active;
-        return (
-          <Pressable key={t.key} testID={`tab-${t.key}`} onPress={() => onChange(t.key)} style={styles.tabItem}>
-            <Icon name={t.icon} size={21} color={on ? palette.accent : palette.textMuted} />
-            <Text
-              style={[
-                type.tiny,
-                { color: on ? palette.accent : palette.textMuted, marginTop: 2, fontWeight: on ? '600' : '500' },
-              ]}
-            >
-              {t.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
+/*_TabBar iOS dipakai dari ui.tsx (ikon 24px + badge merah). _*/
 
 /* ---------------------------------------------------------------- Konsumen */
 
 function ConsumerShell() {
+  const { orders } = useStore();
   const [tab, setTab] = useState<ConsumerTab>('explore');
   const [openItem, setOpenItem] = useState<string | null>(null);
+  const aktif = orders.filter((o) => o.buyerRole === 'consumer' && (o.status === 'paid' || o.status === 'pending')).length;
 
   if (openItem !== null) {
     return (
@@ -109,13 +92,14 @@ function ConsumerShell() {
 
       <TabBar
         tabs={[
-          { key: 'explore', label: 'Jelajahi', icon: 'food-variant' },
-          { key: 'orders', label: 'Pesanan', icon: 'receipt-text-outline' },
-          { key: 'impact', label: 'Dampak', icon: 'leaf' },
-          { key: 'profile', label: 'Profil', icon: 'account-circle-outline' },
+          { key: 'explore', label: 'Jelajahi', icon: 'compass-outline', iconActive: 'compass' },
+          { key: 'orders', label: 'Pesanan', icon: 'bookmark-outline', iconActive: 'bookmark' },
+          { key: 'impact', label: 'Dampak', icon: 'leaf-circle-outline', iconActive: 'leaf' },
+          { key: 'profile', label: 'Profil', icon: 'account-circle-outline', iconActive: 'account-circle' },
         ]}
         active={tab}
         onChange={(k) => setTab(k as ConsumerTab)}
+        badges={{ orders: aktif }}
       />
     </View>
   );
@@ -124,7 +108,11 @@ function ConsumerShell() {
 /* ----------------------------------------------------------------- Penjual */
 
 function MerchantShell() {
+  const { orders } = useStore();
+  const { user } = useAuth();
   const [tab, setTab] = useState<'dashboard' | 'profile'>('dashboard');
+  const MID = user?.merchantId ?? 'm1';
+  const perlu = orders.filter((o) => o.merchantId === MID && o.status === 'paid').length;
 
   return (
     <View style={styles.root}>
@@ -135,11 +123,12 @@ function MerchantShell() {
 
       <TabBar
         tabs={[
-          { key: 'dashboard', label: 'Dashboard', icon: 'view-dashboard-outline' },
-          { key: 'profile', label: 'Profil usaha', icon: 'storefront-outline' },
+          { key: 'dashboard', label: 'Dashboard', icon: 'view-dashboard-outline', iconActive: 'view-dashboard' },
+          { key: 'profile', label: 'Profil usaha', icon: 'storefront-outline', iconActive: 'storefront' },
         ]}
         active={tab}
         onChange={(k) => setTab(k as 'dashboard' | 'profile')}
+        badges={{ dashboard: perlu }}
       />
     </View>
   );
@@ -180,6 +169,22 @@ function Shell() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
     <SafeAreaProvider>
       <AuthProvider>
@@ -193,13 +198,4 @@ export default function App() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.bg },
-  tabbar: {
-    flexDirection: 'row',
-    backgroundColor: palette.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: palette.border,
-    paddingBottom: 6,
-    paddingTop: 7,
-  },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

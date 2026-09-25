@@ -1,15 +1,19 @@
 /**
- * NIRA - layar Detail makanan (konsumen).
+ * NIRA - layar Detail makanan (konsumen), gaya iOS.
  *
  * Di sini konsumen memilih jumlah porsi lalu memesan. Setelah dipesan,
  * muncul kode pickup yang ditunjukkan ke penjual saat mengambil.
+ *
+ * Visual: foto hero full-width 220px, judul + warung, badge rating/diskon,
+ * Group sel (Jam ambil / Sisa porsi / Diskon), stepper porsi, ringkasan
+ * harga, kartu dampak hijau, lokasi statis -> Google Maps, footer total.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Badge, Button, Card, Divider, Icon, T } from '../ui';
+import { Badge, Button, Card, Cell, Group, Icon, SectionLabel, Stars, T } from '../ui';
 import { angkaDesimal, resolvePhoto, rupiah } from '../data';
-import { palette, radius, spacing, type } from '../theme';
+import { palette, spacing, type } from '../theme';
 import { useStore } from '../store';
 import type { Order } from '../types';
 
@@ -31,9 +35,9 @@ function LocationMap({ lat, lng, address }: { lat: number; lng: number; address:
   };
 
   return (
-    <Pressable onPress={openExternal} style={styles.mapFallbackPress}>
-      <View style={[styles.mapFallback, { alignItems: 'center', justifyContent: 'center' }]}>
-        <Icon name="map-marker-outline" size={34} color={palette.accent} />
+    <Pressable onPress={openExternal} style={styles.mapPress}>
+      <View style={styles.mapFallback}>
+        <Icon name="map-marker-outline" size={30} color={palette.accent} />
         <T style={[type.bodyStrong, { marginTop: 6 }]}>Lihat lokasi di peta</T>
         <T tone="muted" style={[type.tiny, { marginTop: 2, textAlign: 'center' }]}>
           {address} · buka Google Maps
@@ -66,7 +70,7 @@ export default function ItemDetailScreen({
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={{ padding: spacing.gutter }}>
-          <Button label="Kembali" variant="secondary" onPress={onBack} />
+          <Button label="Kembali" variant="ghost" icon="chevron-left" onPress={onBack} />
           <T tone="muted" style={{ marginTop: spacing.lg }}>Makanan ini sudah tidak tersedia.</T>
         </View>
       </SafeAreaView>
@@ -78,6 +82,7 @@ export default function ItemDetailScreen({
   const total = item.price * qty;
   const hemat = (item.originalPrice - item.price) * qty;
   const habis = item.portions <= 0;
+  const pct = discountPct(item.originalPrice, item.price);
 
   /**
    * Pesan porsi.
@@ -112,119 +117,119 @@ export default function ItemDetailScreen({
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.topbar}>
-        <Button label="‹ Kembali" variant="ghost" onPress={onBack} style={{ height: 34, paddingHorizontal: 4 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingBottom: 140 }}>
-        {/* Foto makanan besar */}
-        <View style={styles.heroPhoto}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+        {/* Foto hero full-width 220px + tombol kembali melayang ala iOS */}
+        <View style={styles.hero}>
           {resolvePhoto(item.photo) ? (
-            <Image source={resolvePhoto(item.photo)!} style={styles.heroPhotoImg} resizeMode="cover" />
+            <Image source={resolvePhoto(item.photo)!} style={styles.heroImg} resizeMode="cover" />
           ) : (
             <Icon name={item.icon} size={64} color={palette.textDim} />
           )}
+          <Pressable
+            onPress={onBack}
+            style={styles.backFloat}
+            hitSlop={8}
+            accessibilityLabel="Kembali"
+          >
+            <Icon name="chevron-left" size={24} color="#fff" />
+          </Pressable>
         </View>
 
-        <Card>
-          <T style={type.h2}>{item.title}</T>
+        <View style={{ paddingHorizontal: spacing.gutter, marginTop: spacing.lg }}>
+          {/* Judul + warung */}
+          <T style={type.h1}>{item.title}</T>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
             <Icon name="storefront-outline" size={14} color={palette.textMuted} />
             <T tone="muted" style={type.small}>{m.name}</T>
           </View>
-          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' }}>
+
+          {/* Badge rating (bintang vektor) / diskon / jarak */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' }}>
             <View style={styles.ratingBadge}>
-              <Icon name="star" size={13} color="#f5a623" />
+              <Stars value={m.rating} size={12} />
               <T style={[type.tiny, { color: palette.textMuted }]}>{m.rating} ({m.ratingCount})</T>
             </View>
+            {pct > 0 ? <Badge label={`-${pct}%`} tone="green" /> : null}
             <Badge label={`${m.distanceKm} km`} tone="neutral" />
             <Badge label={m.category} tone="neutral" />
           </View>
 
-          <Divider style={{ marginVertical: spacing.lg }} />
+          <SectionLabel text="Tentang" />
+          <Card>
+            <T style={type.body}>{item.description}</T>
+          </Card>
 
-          <T tone="muted" style={type.tiny}>DESKRIPSI</T>
-          <T style={{ marginTop: 4 }}>{item.description}</T>
+          <SectionLabel text="Info pengambilan" />
+          <Group>
+            <Cell label="Jam ambil" value={`${item.pickupStart}–${item.pickupEnd}`} />
+            <Cell label="Sisa porsi" value={String(item.portions)} />
+            <Cell label="Diskon" value={pct > 0 ? `-${pct}%` : 'Tidak ada'} valueColor={palette.green} />
+          </Group>
 
-          <Divider style={{ marginVertical: spacing.lg }} />
-
-          <View style={styles.metaRow}>
-            <View style={{ flex: 1 }}>
-              <T tone="muted" style={type.tiny}>JAM AMBIL</T>
-              <T style={type.bodyStrong}>{item.pickupStart}–{item.pickupEnd}</T>
+          <SectionLabel text="Jumlah porsi" />
+          <Card>
+            <View style={styles.qtyRow}>
+              <View>
+                <T style={type.bodyStrong}>Jumlah porsi</T>
+                <T tone="muted" style={type.tiny}>Maksimal {maxQty} porsi</T>
+              </View>
+              <View style={styles.stepper}>
+                <Button
+                  label="−"
+                  variant="secondary"
+                  onPress={() => setQty((n) => Math.max(1, n - 1))}
+                  style={styles.stepBtn}
+                />
+                <Text style={styles.qtyNum}>{qty}</Text>
+                <Button
+                  label="+"
+                  variant="secondary"
+                  onPress={() => setQty((n) => Math.min(maxQty, n + 1))}
+                  style={styles.stepBtn}
+                />
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <T tone="muted" style={type.tiny}>SISA PORSI</T>
-              <T style={type.bodyStrong}>{item.portions}</T>
+          </Card>
+
+          <SectionLabel text="Ringkasan harga" />
+          <Card>
+            <View style={styles.sumRow}>
+              <T tone="muted">Harga normal</T>
+              <Text style={styles.strike}>{rupiah(item.originalPrice * qty)}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <T tone="muted" style={type.tiny}>DISKON</T>
-              <T style={[type.bodyStrong, { color: palette.green }]}>
-                -{discountPct(item.originalPrice, item.price)}%
-              </T>
+            <View style={styles.sumRow}>
+              <T tone="muted">Hemat</T>
+              <T style={{ color: palette.green, fontWeight: '600' }}>−{rupiah(hemat)}</T>
             </View>
-          </View>
-        </Card>
-
-        <Card style={{ marginTop: spacing.lg }}>
-          <View style={styles.qtyRow}>
-            <View>
-              <T style={type.bodyStrong}>Jumlah porsi</T>
-              <T tone="muted" style={type.tiny}>Maksimal {maxQty} porsi</T>
+            <View style={[styles.sumRow, { marginTop: spacing.sm }]}>
+              <T style={type.bodyStrong}>Total bayar</T>
+              <Text style={styles.total}>{rupiah(total)}</Text>
             </View>
-            <View style={styles.stepper}>
-              <Button
-                label="−"
-                variant="secondary"
-                onPress={() => setQty((n) => Math.max(1, n - 1))}
-                style={styles.stepBtn}
-              />
-              <Text style={styles.qtyNum}>{qty}</Text>
-              <Button
-                label="+"
-                variant="secondary"
-                onPress={() => setQty((n) => Math.min(maxQty, n + 1))}
-                style={styles.stepBtn}
-              />
+          </Card>
+
+          {/* Kartu dampak hijau */}
+          <Card style={{ marginTop: spacing.lg, backgroundColor: palette.greenSoft }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <Icon name="leaf" size={15} color={palette.accent} />
+              <T style={[type.bodyStrong, { color: palette.accent }]}>Dampak pesanan ini</T>
             </View>
-          </View>
+            <T style={[type.small, { color: palette.textMuted, marginTop: 4 }]}>
+              {qty} porsi terselamatkan · setara {angkaDesimal(Math.round(qty * 2.5 * 10) / 10)} kg CO₂ tidak terbuang.
+            </T>
+          </Card>
 
-          <Divider style={{ marginVertical: spacing.lg }} />
-
-          <View style={styles.sumRow}>
-            <T tone="muted">Harga normal</T>
-            <Text style={styles.strike}>{rupiah(item.originalPrice * qty)}</Text>
-          </View>
-          <View style={styles.sumRow}>
-            <T tone="muted">Hemat</T>
-            <T style={{ color: palette.green, fontWeight: '600' }}>−{rupiah(hemat)}</T>
-          </View>
-          <View style={[styles.sumRow, { marginTop: spacing.sm }]}>
-            <T style={type.bodyStrong}>Total bayar</T>
-            <Text style={styles.total}>{rupiah(total)}</Text>
-          </View>
-        </Card>
-
-        <Card style={{ marginTop: spacing.lg, backgroundColor: palette.accentSoft, borderColor: 'rgba(51,144,236,0.25)' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <Icon name="leaf" size={15} color={palette.accent} />
-            <T style={[type.bodyStrong, { color: palette.accent }]}>Dampak pesanan ini</T>
-          </View>
-          <T style={[type.small, { color: palette.textMuted, marginTop: 4 }]}>
-            {qty} porsi terselamatkan · setara {angkaDesimal(Math.round(qty * 2.5 * 10) / 10)} kg CO₂ tidak terbuang.
-          </T>
-        </Card>
-
-        {/* Lokasi pengambilan: kotak statis -> buka Google Maps. */}
-        <Card style={{ marginTop: spacing.lg }}>
-          <T style={type.bodyStrong}>Lokasi pengambilan</T>
-          <T tone="muted" style={[type.small, { marginTop: 2 }]}>{m.address}</T>
-          <View style={{ marginTop: spacing.md }}>
-            <LocationMap lat={m.lat} lng={m.lng} address={m.address} />
-          </View>
-        </Card>
+          <SectionLabel text="Lokasi pengambilan" />
+          <Card>
+            <T style={type.bodyStrong}>Lokasi pengambilan</T>
+            <T tone="muted" style={[type.small, { marginTop: 2 }]}>{m.address}</T>
+            <View style={{ marginTop: spacing.md }}>
+              <LocationMap lat={m.lat} lng={m.lng} address={m.address} />
+            </View>
+          </Card>
+        </View>
       </ScrollView>
 
+      {/* Footer: total + tombol pesan */}
       <View style={[styles.footer, { paddingBottom: Math.max(spacing.md, insets.bottom + 4) }]}>
         <View style={{ flex: 1 }}>
           <T tone="muted" style={type.tiny}>TOTAL</T>
@@ -246,27 +251,33 @@ export default function ItemDetailScreen({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   topbar: { paddingHorizontal: spacing.gutter, paddingTop: spacing.sm },
-  heroPhoto: {
-    width: '100%', height: 200, borderRadius: radius.md, backgroundColor: palette.surfaceAlt,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: palette.border,
-    overflow: 'hidden', marginBottom: spacing.lg,
+  backBtn: { height: 34, paddingHorizontal: 4, alignSelf: 'flex-start' },
+  /* Tombol kembali melayang di atas foto hero (lingkaran gelap ala iOS) */
+  backFloat: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  heroPhotoImg: { width: '100%', height: '100%' },
-  mapFallback: {
-    width: '100%', height: 170, borderRadius: radius.sm, borderWidth: 1, borderColor: palette.border,
-    backgroundColor: palette.surfaceAlt,
-  },
-  mapFallbackPress: { width: '100%' },
-  ratingBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3,
-    borderRadius: radius.xs, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.surfaceAlt,
-  },
-  heroRow: { flexDirection: 'row', gap: spacing.lg },
   hero: {
-    width: 92, height: 92, borderRadius: radius.md, backgroundColor: palette.surfaceAlt,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: palette.border,
+    width: '100%', height: 220, backgroundColor: palette.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
-  metaRow: { flexDirection: 'row' },
+  heroImg: { width: '100%', height: '100%' },
+  ratingBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 8, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.surface,
+  },
+  mapFallback: {
+    width: '100%', height: 170, borderRadius: 10, borderWidth: 1, borderColor: palette.border,
+    backgroundColor: palette.surfaceAlt, alignItems: 'center', justifyContent: 'center',
+  },
+  mapPress: { width: '100%' },
   qtyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   stepBtn: { width: 44, height: 38, paddingHorizontal: 0 },

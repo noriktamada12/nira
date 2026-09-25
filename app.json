@@ -2,7 +2,7 @@
   "expo": {
     "name": "NIRA",
     "slug": "nira",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "nira",
@@ -56,7 +56,8 @@
           "cameraPermission": "NIRA memakai kamera untuk memotret makanan surplus."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-splash-screen"
     ]
   }
 }

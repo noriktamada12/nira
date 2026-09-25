@@ -1,25 +1,18 @@
 /**
- * NIRA - layar Profil penjual.
- *
- * Sebelumnya sisi penjual tidak punya halaman profil sama sekali - begitu masuk
- * hanya ada dashboard, jadi penjual tidak bisa melihat atau mengubah data
- * usahanya. Layar ini melengkapi itu:
+ * NIRA - layar Profil penjual (gaya iOS).
  *
  *   - identitas usaha (nama, jenis, alamat, telepon, catatan) - bisa disunting
  *   - status verifikasi (belum diajukan / menunggu / terverifikasi / ditolak)
  *   - ringkasan kinerja: pendapatan, porsi terjual, rating, jumlah ulasan
  *   - ulasan terbaru dari konsumen
  *   - tombol keluar akun
- *
- * Catatan desain: ikon memakai vektor MaterialCommunityIcons (bukan emoji),
- * tanpa gradien, tanpa bayangan berat - konsisten dengan layar lain.
  */
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Badge, Button, Card, Divider, Icon, IconBadge, ScreenHeader, T } from '../ui';
+import { Badge, Button, Card, Cell, Divider, Group, Icon, IconBadge, LargeTitle, SectionLabel, Stars, T } from '../ui';
 import { rupiah } from '../data';
-import { palette, radius, spacing, type } from '../theme';
+import { palette, radius, spacing, type, TABBAR_SPACE } from '../theme';
 import { useStore } from '../store';
 import { useAuth, type BusinessInfo, type VerifyStatus } from '../auth';
 
@@ -87,25 +80,14 @@ export default function MerchantProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader
-        title="Profil usaha"
-        subtitle="Data toko & ringkasan kinerja"
-        right={
-          <Button
-            label={sunting ? 'Tutup' : 'Sunting'}
-            variant={sunting ? 'secondary' : 'primary'}
-            onPress={() => setSunting((v) => !v)}
-            style={{ height: 38 }}
-          />
-        }
-      />
+      <LargeTitle title="Profil Usaha" subtitle="Data toko dan ringkasan kinerja" />
 
-      <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingBottom: spacing.xxl + insets.bottom }}>
+      <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingTop: 0, paddingBottom: spacing.xxl + insets.bottom + TABBAR_SPACE }}>
         {/* ---------- identitas usaha ---------- */}
         <Card>
           <View style={styles.identitas}>
             <View style={styles.avatar}>
-              <Icon name="storefront-outline" size={30} color={palette.accent} />
+              <Icon name="storefront" size={30} color={palette.accent} />
             </View>
             <View style={{ flex: 1 }}>
               <T style={type.h3}>{user?.business?.businessName ?? 'Usaha kamu'}</T>
@@ -119,15 +101,22 @@ export default function MerchantProfileScreen() {
 
           <Divider style={{ marginVertical: spacing.lg }} />
 
-          <BarisInfo icon="account-outline" label="Nama pemilik" nilai={user?.name ?? '-'} />
-          <BarisInfo icon="email-outline" label="Email" nilai={user?.email ?? '-'} />
-          <BarisInfo icon="map-marker-outline" label="Alamat" nilai={user?.business?.address || 'belum diisi'} />
-          <BarisInfo icon="phone-outline" label="Telepon" nilai={user?.business?.phone || 'belum diisi'} last />
-
-          <View style={[styles.catatanKotak, { borderLeftColor: meta.tone === 'green' ? palette.green : palette.accent }]}>
-            <T style={[type.small, { lineHeight: 19 }]}>{meta.pesan}</T>
-          </View>
+          <T tone="muted" style={[type.small, { lineHeight: 19 }]}>{meta.pesan}</T>
         </Card>
+
+        <SectionLabel text="Data Usaha" />
+        <Group>
+          <Cell label="Pemilik" value={user?.name ?? '-'} />
+          <Cell label="Email" value={user?.email ?? '-'} />
+          <Cell label="Alamat" value={user?.business?.address || 'belum diisi'} />
+          <Cell label="Telepon" value={user?.business?.phone || 'belum diisi'} />
+          <Cell
+            label="Ubah data usaha"
+            value={sunting ? 'Tutup' : 'Sunting'}
+            onPress={() => setSunting((v) => !v)}
+            testID="btn-edit-business"
+          />
+        </Group>
 
         {/* ---------- form sunting ---------- */}
         {sunting ? (
@@ -164,18 +153,22 @@ export default function MerchantProfileScreen() {
         ) : null}
 
         {/* ---------- ringkasan kinerja ---------- */}
-        <T tone="muted" style={[type.tiny, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>RINGKASAN KINERJA</T>
+        <SectionLabel text="Ringkasan Kinerja" />
         <View style={styles.grid}>
           <KotakAngka icon="cash" label="Pendapatan" nilai={rupiah(kinerja.pendapatan)} />
           <KotakAngka icon="food" label="Porsi terjual" nilai={String(kinerja.porsi)} />
         </View>
         <View style={[styles.grid, { marginTop: spacing.md }]}>
-          <KotakAngka icon="star" label="Rating" nilai={kinerja.jumlahUlasan ? `${kinerja.rating} (${kinerja.jumlahUlasan})` : 'belum ada'} />
+          <KotakAngka
+            icon="star"
+            label="Rating"
+            nilai={kinerja.jumlahUlasan ? `${kinerja.rating} (${kinerja.jumlahUlasan})` : 'belum ada'}
+          />
           <KotakAngka icon="package-variant-closed" label="Sedang tayang" nilai={`${kinerja.tayang} menu`} />
         </View>
 
         {kinerja.perluAksi > 0 ? (
-          <Card style={{ marginTop: spacing.lg, backgroundColor: palette.accentSoft, borderColor: palette.border }}>
+          <Card style={{ marginTop: spacing.lg, backgroundColor: palette.greenSoft }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <Icon name="bell-ring-outline" size={18} color={palette.accent} />
               <T style={[type.bodyStrong, { color: palette.accent, flex: 1 }]}>
@@ -186,7 +179,7 @@ export default function MerchantProfileScreen() {
         ) : null}
 
         {/* ---------- ulasan konsumen ---------- */}
-        <T tone="muted" style={[type.tiny, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>ULASAN KONSUMEN</T>
+        <SectionLabel text="Ulasan Konsumen" />
         {ulasan.length === 0 ? (
           <Card>
             <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
@@ -200,16 +193,7 @@ export default function MerchantProfileScreen() {
           ulasan.map((o) => (
             <Card key={o.id} style={{ marginTop: spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                <View style={{ flexDirection: 'row' }}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Icon
-                      key={i}
-                      name={i < (o.stars ?? 0) ? 'star' : 'star-outline'}
-                      size={14}
-                      color={i < (o.stars ?? 0) ? '#f5a623' : palette.textDim}
-                    />
-                  ))}
-                </View>
+                <Stars value={o.stars ?? 0} size={14} />
                 <T tone="muted" style={[type.tiny, { flex: 1 }]} numberOfLines={1}>{o.itemTitle}</T>
               </View>
               {o.reviewNote ? (
@@ -221,7 +205,10 @@ export default function MerchantProfileScreen() {
           ))
         )}
 
-        <Button label="Keluar akun" variant="secondary" onPress={signOut} style={{ marginTop: spacing.xl }} />
+        <SectionLabel text="Akun" />
+        <Group>
+          <Cell label="Keluar akun" onPress={signOut} testID="btn-signout" />
+        </Group>
         <T tone="muted" style={[type.tiny, { textAlign: 'center', marginTop: spacing.sm }]}>
           Data usaha tersimpan lokal di HP ini untuk keperluan demo.
         </T>
@@ -232,20 +219,10 @@ export default function MerchantProfileScreen() {
 
 /* ------------------------------------------------------------- potongan kecil */
 
-function BarisInfo({ icon, label, nilai, last }: { icon: string; label: string; nilai: string; last?: boolean }) {
-  return (
-    <View style={[styles.baris, last ? { marginBottom: 0 } : null]}>
-      <Icon name={icon as never} size={17} color={palette.textMuted} />
-      <T tone="muted" style={[type.small, { flex: 1 }]}>{label}</T>
-      <T style={[type.small, { fontWeight: '600', flexShrink: 1, textAlign: 'right' }]} numberOfLines={2}>{nilai}</T>
-    </View>
-  );
-}
-
-function KotakAngka({ icon, label, nilai }: { icon: string; label: string; nilai: string }) {
+function KotakAngka({ icon, label, nilai }: { icon: 'cash' | 'food' | 'star' | 'package-variant-closed'; label: string; nilai: string }) {
   return (
     <Card style={{ flex: 1 }}>
-      <IconBadge name={icon as never} size={20} boxSize={42} />
+      <IconBadge name={icon} size={20} boxSize={42} />
       <T tone="muted" style={[type.tiny, { marginTop: spacing.sm }]}>{label.toUpperCase()}</T>
       <Text style={styles.angka} numberOfLines={1} adjustsFontSizeToFit>{nilai}</Text>
     </Card>
@@ -278,13 +255,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   identitas: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatar: {
-    width: 62, height: 62, borderRadius: radius.md, backgroundColor: palette.accentSoft,
+    width: 62, height: 62, borderRadius: radius.md, backgroundColor: palette.greenSoft,
     alignItems: 'center', justifyContent: 'center',
-  },
-  baris: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
-  catatanKotak: {
-    marginTop: spacing.md, paddingLeft: spacing.md, paddingVertical: spacing.xs,
-    borderLeftWidth: 3,
   },
   grid: { flexDirection: 'row', gap: spacing.md },
   angka: { fontSize: 19, fontWeight: '700', color: palette.text, marginTop: 3, letterSpacing: -0.4 },

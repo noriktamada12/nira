@@ -1,5 +1,5 @@
 /**
- * NIRA - layar Profil (konsumen).
+ * NIRA - layar Profil (konsumen, gaya iOS).
  *
  * Menampilkan akun yang sedang masuk, ringkasan dampak, dan tombol keluar.
  * Ini juga tempat konsumen melihat bahwa peran akunnya memang konsumen —
@@ -9,9 +9,9 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Badge, Button, Card, Divider, Icon, IconBadge, ScreenHeader, T } from '../ui';
+import { Badge, Button, Card, Chevron, Group, Icon, IconBadge, LargeTitle, SectionLabel, T } from '../ui';
 import { rupiah } from '../data';
-import { palette, spacing, type } from '../theme';
+import { palette, spacing, type, TABBAR_SPACE } from '../theme';
 import { useStore } from '../store';
 import { useAuth } from '../auth';
 
@@ -30,10 +30,11 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="Profil" subtitle="Akun dan ringkasan aktivitasmu" />
+      <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl + insets.bottom + TABBAR_SPACE }}>
+        <LargeTitle title="Profil" />
 
-      <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingBottom: spacing.xxl + insets.bottom }}>
-        <Card>
+        {/* Kartu identitas */}
+        <Card style={styles.identityCard}>
           <View style={styles.identity}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials || '?'}</Text>
@@ -47,10 +48,7 @@ export default function ProfileScreen() {
               </View>
             </View>
           </View>
-
-          <Divider style={{ marginVertical: spacing.lg }} />
-
-          <T tone="muted" style={[type.small, { lineHeight: 20 }]}>
+          <T tone="muted" style={[type.small, { lineHeight: 20, marginTop: spacing.md }]}>
             Kamu sedang memakai akun konsumen. Setiap pesanan yang kamu ambil ikut menyelamatkan
             makanan yang seharusnya terbuang.
           </T>
@@ -60,6 +58,7 @@ export default function ProfileScreen() {
           </T>
         </Card>
 
+        {/* 2 kartu statistik */}
         <View style={styles.grid}>
           <Card style={{ flex: 1 }}>
             <IconBadge name="leaf" size={20} boxSize={42} />
@@ -75,49 +74,52 @@ export default function ProfileScreen() {
           </Card>
         </View>
 
-        <Card style={{ marginTop: spacing.md }}>
-          <Row icon="receipt-text-outline" title="Riwayat pesanan" value={`${orders.length} transaksi`} />
-          <Divider style={{ marginVertical: spacing.md }} />
-          <Row icon="earth" title="CO₂ dihindari" value={`${impact.co2SavedKg} kg`} />
-          <Divider style={{ marginVertical: spacing.md }} />
-          <Row icon="bell-outline" title="Notifikasi" value="Aktif" />
-        </Card>
+        <SectionLabel text="Akun" />
+        <View style={styles.groupWrap}>
+          <Group>
+            <MenuRow icon="receipt-text-outline" title="Riwayat pesanan" value={`${orders.length} transaksi`} />
+            <MenuRow icon="earth" title="CO2 dihindari" value={`${impact.co2SavedKg} kg`} />
+            <MenuRow icon="bell-outline" title="Notifikasi" value="Aktif" />
+          </Group>
+        </View>
 
-        <Button
-          label="Keluar akun"
-          variant="secondary"
-          icon="logout"
-          testID="btn-signout"
-          onPress={signOut}
-          style={{ marginTop: spacing.lg }}
-        />
-
-        <Button
-          label="Reset data demo"
-          variant="ghost"
-          onPress={reset}
-          style={{ marginTop: spacing.sm }}
-        />
-        <T tone="muted" style={[type.tiny, { textAlign: 'center', marginTop: spacing.sm }]}>
-          Data demo tersimpan lokal di HP ini (AsyncStorage).
-        </T>
+        <View style={styles.btnWrap}>
+          <Button
+            label="Keluar akun"
+            variant="danger"
+            icon="logout"
+            testID="btn-signout"
+            onPress={signOut}
+          />
+          <Button
+            label="Reset data demo"
+            variant="ghost"
+            onPress={reset}
+            style={{ marginTop: spacing.sm }}
+          />
+          <T tone="muted" style={[type.tiny, { textAlign: 'center', marginTop: spacing.sm }]}>
+            Data demo tersimpan lokal di HP ini (AsyncStorage).
+          </T>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Row({ icon, title, value }: { icon: React.ComponentProps<typeof Icon>['name']; title: string; value: string }) {
+function MenuRow({ icon, title, value }: { icon: React.ComponentProps<typeof Icon>['name']; title: string; value: string }) {
   return (
-    <View style={styles.row}>
+    <View style={styles.menuRow}>
       <Icon name={icon} size={18} color={palette.textMuted} />
       <T style={[type.body, { flex: 1 }]}>{title}</T>
       <T tone="muted" style={type.small}>{value}</T>
+      <Chevron />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
+  identityCard: { marginHorizontal: spacing.gutter },
   identity: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
   avatar: {
     width: 60, height: 60, borderRadius: 30, backgroundColor: palette.accentSoft,
@@ -125,7 +127,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(27,133,68,0.25)',
   },
   avatarText: { fontSize: 22, fontWeight: '700', color: palette.accent },
-  grid: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
+  grid: { flexDirection: 'row', gap: spacing.md, marginHorizontal: spacing.gutter, marginTop: spacing.md },
   num: { fontSize: 24, fontWeight: '700', color: palette.text, marginVertical: 2, letterSpacing: -0.5 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  groupWrap: { marginHorizontal: spacing.gutter },
+  menuRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    paddingVertical: 11, paddingHorizontal: spacing.lg,
+  },
+  btnWrap: { marginHorizontal: spacing.gutter, marginTop: spacing.xl },
 });

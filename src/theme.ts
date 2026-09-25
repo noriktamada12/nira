@@ -1,39 +1,53 @@
 /**
- * NIRA - design tokens.
+ * NIRA - design tokens (gaya iOS).
  *
- * Warna, radius, tipografi dan durasi animasi diambil dari riset design
- * Telegram asli (telegram.org + web.telegram.org/k) yang sudah diekstrak
- * ke tg-design/DESIGN-REFERENCE.md. Prinsip yang dipertahankan:
- * satu warna aksen, hairline 1px sebagai pemisah, radius kecil untuk UI,
- * transisi 200ms dengan cubic-bezier(0.4, 0, 0.2, 1), hanya opacity+transform.
+ * Dunia visual: iOS Settings / WhatsApp iOS.
+ *   - Judul layar 34px rata kiri (large title), bukan header tengah.
+ *   - Latar abu sistem (#F2F2F7), kartu putih radius 14.
+ *   - Biru iOS (#007AFF) untuk navigasi, hijau NIRA untuk aksi utama.
+ *   - Font Inter (metrik mirip SF Pro) + fallback sistem.
  */
 
+export const font = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+  extrabold: 'Inter_800ExtraBold',
+} as const;
+
 export const palette = {
-  // aksen tunggal: hijau NIRA (#1B7A3E - kontras 4.68:1 dgn putih, lolos AA)
+  // aksen utama: hijau NIRA (aksi primer, harga, badge sukses)
   accent: '#1B7A3E',
-  accentHover: '#155F31',
-  accentSoft: 'rgba(27,133,68,0.10)',
-  accentBright: '#3AAC69',
+  accentSoft: 'rgba(27,122,62,0.10)',
+
+  // biru iOS: navigasi, link, tab aktif
+  blue: '#007AFF',
+  blueSoft: 'rgba(0,122,255,0.10)',
 
   // "bubble out" hijau muda - dipakai untuk aksi sukses
-  green: '#2E9E5B',
-  greenSoft: 'rgba(46,158,91,0.12)',
+  green: '#1B7A3E',
+  greenSoft: '#EAF6EE',
 
-  danger: '#df3f40',
-  dangerSoft: 'rgba(223,63,64,0.12)',
+  danger: '#FF3B30',
+  dangerSoft: 'rgba(255,59,48,0.12)',
 
-  warning: '#f2a33c',
-  warningSoft: 'rgba(242,163,60,0.14)',
+  warning: '#FF9F0A',
+  warningSoft: '#FFF4E0',
 
-  // netral terang (telegram.org)
-  bg: '#f4f4f5',
+  star: '#FF9F0A',
+
+  // netral iOS
+  bg: '#F2F2F7',
   surface: '#ffffff',
-  surfaceAlt: '#fafafa',
-  border: '#dfe1e5',
+  surfaceAlt: '#F2F2F7',
+  grouped: '#E9E9EE',
+  border: '#E5E5EA',
   hairline: 'rgba(0,0,0,0.08)',
-  text: '#000000',
-  textMuted: '#707579',
-  textDim: '#8c8e91',
+  separator: '#C7C7CC',
+  text: '#111111',
+  textMuted: '#6e6e73',
+  textDim: '#8e8e93',
   overlay: 'rgba(0,0,0,0.45)',
 } as const;
 
@@ -49,14 +63,11 @@ export const dark = {
 } as const;
 
 export const radius = {
-  xs: 4,      // dominan Telegram
-  sm: 8,
-  md: 10,     // kartu
-  lg: 16,
-  xl: 19,     // pill
-  chat: 24,   // input chat
-  bubble: 15,
-  bubbleTail: 5,
+  xs: 8,      // badge kecil
+  sm: 10,     // input, tombol kecil
+  md: 12,     // thumbnail
+  lg: 14,     // kartu iOS
+  xl: 16,
   full: 999,
 } as const;
 
@@ -67,19 +78,24 @@ export const spacing = {
   lg: 16,
   xl: 20,
   xxl: 28,
-  gutter: 15, // gutter telegram.org
+  gutter: 16, // gutter iOS
 } as const;
 
+/** Ruang aman di atas TabBar (± tinggi tab bar iOS) supaya konten tak ketiban. */
+export const TABBAR_SPACE = 84;
+
 export const type = {
-  // Telegram: 14px paling dominan, teks kecil & rapat
-  h1: { fontSize: 24, fontWeight: '700' as const, letterSpacing: -0.3 },
-  h2: { fontSize: 19, fontWeight: '700' as const, letterSpacing: -0.2 },
-  h3: { fontSize: 16, fontWeight: '600' as const },
-  body: { fontSize: 14, fontWeight: '400' as const },
-  bodyStrong: { fontSize: 14, fontWeight: '600' as const },
-  small: { fontSize: 13, fontWeight: '400' as const },
-  tiny: { fontSize: 11.5, fontWeight: '500' as const },
-  button: { fontSize: 15, fontWeight: '600' as const },
+  // Judul layar iOS (large title): 34px rata kiri
+  largeTitle: { fontSize: 34, fontFamily: font.bold, letterSpacing: -0.7 },
+  h1: { fontSize: 22, fontFamily: font.bold, letterSpacing: -0.4 },
+  h2: { fontSize: 19, fontFamily: font.bold, letterSpacing: -0.2 },
+  h3: { fontSize: 16, fontFamily: font.semibold },
+  body: { fontSize: 15, fontFamily: font.regular },
+  bodyStrong: { fontSize: 15, fontFamily: font.semibold },
+  small: { fontSize: 13, fontFamily: font.regular },
+  tiny: { fontSize: 11.5, fontFamily: font.medium },
+  caption: { fontSize: 12, fontFamily: font.regular },
+  button: { fontSize: 16, fontFamily: font.bold },
 } as const;
 
 /** 200ms adalah durasi paling dominan di CSS Telegram (119 kemunculan). */

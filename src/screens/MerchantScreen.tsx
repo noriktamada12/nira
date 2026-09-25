@@ -1,5 +1,5 @@
 /**
- * NIRA - layar Dashboard penjual.
+ * NIRA - layar Dashboard penjual (gaya iOS).
  *
  * Sisi penjual: lihat pendapatan & porsi terselamatkan, unggah makanan surplus,
  * dan verifikasi pengambilan pesanan (inti alur bisnisnya).
@@ -8,9 +8,9 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Badge, Button, Card, Divider, EmptyState, Icon, Reveal, ScreenHeader, T } from '../ui';
+import { Badge, Button, Card, Divider, EmptyState, Group, Icon, IconBadge, LargeTitle, Reveal, SectionLabel, T } from '../ui';
 import { resolvePhoto, rupiah } from '../data';
-import { palette, radius, spacing, type } from '../theme';
+import { palette, radius, spacing, type, TABBAR_SPACE } from '../theme';
 import { useStore } from '../store';
 import { useAuth } from '../auth';
 import type { Order, OrderStatus, SurplusItem } from '../types';
@@ -121,17 +121,18 @@ function UploadSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
         keyboardVerticalOffset={0}
       >
         <View style={[styles.sheet, { paddingBottom: Math.max(spacing.lg, insets.bottom + spacing.md) }]}>
-          <View style={styles.sheetHead}>
-            <Text style={type.h3}>Unggah makanan surplus</Text>
-            <Button label="Tutup" variant="ghost" onPress={onClose} style={{ height: 30, paddingHorizontal: 8 }} />
-          </View>
+          <View style={styles.grabber} />
+          <Text style={styles.sheetTitle}>Unggah Surplus</Text>
+          <T tone="muted" style={[type.small, { textAlign: 'center', marginTop: 2 }]}>
+            Makanan berlebih hari ini, harga hemat
+          </T>
 
           <ScrollView
             contentContainerStyle={{ paddingBottom: spacing.xxl }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <T tone="muted" style={[type.tiny, { marginTop: spacing.md }]}>FOTO MAKANAN</T>
+            <T tone="muted" style={[type.tiny, { marginTop: spacing.lg }]}>FOTO MAKANAN</T>
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
               <Button label="Kamera" icon="camera" variant="secondary" onPress={takePhoto} style={{ flex: 1, height: 42 }} />
               <Button label="Galeri" icon="image" variant="secondary" onPress={pickPhoto} style={{ flex: 1, height: 42 }} />
@@ -146,7 +147,7 @@ function UploadSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
                 Tanpa foto, kartu makanan memakai ikon:
               </T>
             )}
-            <View style={styles.emojiRow}>
+            <View style={styles.iconRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, alignItems: 'center' }}>
                 {FOOD_ICONS.map((ic) => {
                   const on = ic === icon;
@@ -202,7 +203,7 @@ function UploadSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
             </View>
 
             {num(original) > 0 && num(price) > 0 && num(price) < num(original) ? (
-              <Card style={{ marginTop: spacing.lg, backgroundColor: palette.greenSoft, borderColor: 'rgba(92,168,83,0.3)' }}>
+              <Card style={{ marginTop: spacing.lg, backgroundColor: palette.greenSoft }}>
                 <T style={[type.small, { color: '#3f7a38' }]}>
                   Konsumen hemat {rupiah(num(original) - num(price))} ({Math.round(((num(original) - num(price)) / num(original)) * 100)}%).
                   Kamu tetap dapat {rupiah(num(price) * num(portions))} dari {num(portions)} porsi.
@@ -210,7 +211,10 @@ function UploadSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
               </Card>
             ) : null}
 
-            <Button label="Unggah sekarang" variant="primary" onPress={submit} style={{ marginTop: spacing.xl }} />
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl }}>
+              <Button label="Tutup" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
+              <Button label="Unggah" variant="primary" onPress={submit} style={{ flex: 2 }} />
+            </View>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -296,7 +300,7 @@ function MerchantOrderCard({ order, index }: { order: Order; index: number }) {
 /* ---------------------------------------------------------------- Screen */
 
 export default function MerchantScreen() {
-  const { orders, items, statsFor } = useStore();
+  const { orders, items, statsFor, confirmPickup } = useStore();
   const { user, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'orders' | 'stock'>('orders');
@@ -308,6 +312,7 @@ export default function MerchantScreen() {
 
   const myOrders = useMemo(() => orders.filter((o) => o.merchantId === MERCHANT_ID), [orders, MERCHANT_ID]);
   const needAction = myOrders.filter((o) => o.status === 'paid');
+  const riwayat = myOrders.filter((o) => o.status !== 'paid');
   const myStock = useMemo(
     () => items.filter((i) => i.merchantId === MERCHANT_ID),
     [items, MERCHANT_ID],
@@ -315,50 +320,65 @@ export default function MerchantScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader
-        title="Dashboard penjual"
+      <LargeTitle
+        title="Dashboard"
         subtitle={`${user?.business?.businessName ?? 'Usaha kamu'}${user?.business?.address ? ' · ' + user.business.address.split(',').slice(-1)[0].trim() : ''}`}
-        right={
-          <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
-            <Button label="+ Upload" variant="primary" testID="btn-upload" onPress={() => setUploadOpen(true)} style={{ height: 38 }} />
-            <Button label="Keluar" variant="ghost" testID="btn-merchant-signout" onPress={signOut} style={{ height: 38, paddingHorizontal: 8 }} />
-          </View>
-        }
       />
 
-      <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingBottom: spacing.xxl + insets.bottom }}>
-        <Card style={{ backgroundColor: palette.surface }}>
-          <View style={styles.statRow}>
-            <Stat label="PENDAPATAN" value={rupiah(stats.revenue)} tone="green" />
-            <Stat label="PORSI TERJUAL" value={String(stats.portionsRescued)} />
-            <Stat label="PERLU VERIFIKASI" value={String(needAction.length)} tone={needAction.length ? 'accent' : 'muted'} />
-          </View>
-        </Card>
+      <ScrollView contentContainerStyle={{ padding: spacing.gutter, paddingTop: 0, paddingBottom: spacing.xxl + insets.bottom + TABBAR_SPACE }}>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Button label="Upload surplus" icon="plus" variant="primary" testID="btn-upload" onPress={() => setUploadOpen(true)} style={{ flex: 1, height: 44 }} />
+          <Button label="Keluar" variant="ghost" testID="btn-merchant-signout" onPress={signOut} style={{ height: 44, paddingHorizontal: 12 }} />
+        </View>
 
+        <View style={styles.statGrid}>
+          <StatCard icon="cash" label="Pendapatan" value={rupiah(stats.revenue)} />
+          <StatCard icon="food" label="Porsi terjual" value={String(stats.portionsRescued)} />
+        </View>
+
+        <SectionLabel text={`Perlu diverifikasi · ${needAction.length}`} />
         {needAction.length > 0 ? (
-          <Card style={{ marginTop: spacing.md, backgroundColor: palette.accentSoft, borderColor: 'rgba(51,144,236,0.25)' }}>
-            <T style={[type.bodyStrong, { color: palette.accent }]}>
-              {needAction.length} pesanan menunggu verifikasi
-            </T>
-            <T style={[type.small, { color: palette.textMuted, marginTop: 3 }]}>
-              Cocokkan kode pickup konsumen, serahkan makanan, lalu tekan {'"'}Verifikasi ambil{'"'}.
-            </T>
+          <Group>
+            {needAction.map((o) => (
+              <View key={o.id} style={styles.verifyRow}>
+                <View style={{ flex: 1 }}>
+                  <T style={type.bodyStrong} numberOfLines={1}>{o.itemTitle}</T>
+                  <T tone="muted" style={[type.small, { marginTop: 1 }]}>{o.qty} porsi</T>
+                  <Text style={styles.codeSm}>{o.code}</Text>
+                </View>
+                <Button
+                  label="Verifikasi"
+                  variant="green"
+                  testID={`verify-${o.id}`}
+                  onPress={() => confirmPickup(o.id)}
+                  style={{ height: 38, paddingHorizontal: 14 }}
+                />
+              </View>
+            ))}
+          </Group>
+        ) : (
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Icon name="check-circle-outline" size={20} color={palette.accent} />
+              <T tone="muted" style={[type.small, { flex: 1 }]}>
+                Semua pesanan sudah diverifikasi. Kode pickup baru akan muncul di sini.
+              </T>
+            </View>
           </Card>
-        ) : null}
+        )}
 
-        <View style={styles.tabs}>
-          <Button
-            label="Pesanan masuk"
-            variant={tab === 'orders' ? 'primary' : 'secondary'}
-            onPress={() => setTab('orders')}
-            style={{ flex: 1, height: 38 }}
-          />
-          <Button
-            label="Stok surplus"
-            variant={tab === 'stock' ? 'primary' : 'secondary'}
-            onPress={() => setTab('stock')}
-            style={{ flex: 1, height: 38 }}
-          />
+        <View style={styles.segment}>
+          {([
+            { key: 'orders' as const, label: 'Pesanan masuk' },
+            { key: 'stock' as const, label: 'Stok surplus' },
+          ]).map((t) => {
+            const on = tab === t.key;
+            return (
+              <Pressable key={t.key} onPress={() => setTab(t.key)} style={[styles.segmentOpt, on && styles.segmentOptOn]}>
+                <Text style={[type.bodyStrong, { color: on ? palette.text : palette.textMuted }]}>{t.label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         {tab === 'orders' ? (
@@ -369,18 +389,20 @@ export default function MerchantScreen() {
               body="Pesanan dari konsumen akan muncul di sini beserta kode pickup untuk diverifikasi."
             />
           ) : (
-            myOrders.map((o, i) => <View key={o.id} style={{ marginTop: spacing.md }}><MerchantOrderCard order={o} index={i} /></View>)
+            riwayat.map((o, i) => <View key={o.id} style={{ marginTop: spacing.md }}><MerchantOrderCard order={o} index={i} /></View>)
           )
         ) : (
           myStock.length === 0 ? (
             <EmptyState
               icon="silverware-fork-knife"
               title="Belum ada makanan surplus"
-              body="Tekan tombol + Upload untuk menjual makanan berlebih hari ini."
+              body="Tekan tombol Upload surplus untuk menjual makanan berlebih hari ini."
             />
           ) : (
-            myStock.map((it) => (
-              <StockCard key={it.id} item={it} />
+            myStock.map((it, i) => (
+              <Reveal key={it.id} delay={Math.min(i * 45, 240)}>
+                <StockCard item={it} />
+              </Reveal>
             ))
           )
         )}
@@ -396,8 +418,6 @@ export default function MerchantScreen() {
 /**
  * Kartu stok surplus yang BISA DIEDIT.
  *
- * Sebelumnya kartu ini cuma menampilkan data — begitu surplus sudah tayang,
- * stoknya tidak bisa diubah lagi. Sekarang:
  *   - tombol − / + mengubah jumlah porsi langsung (tersimpan ke penyimpanan)
  *   - tombol "Sunting" membuka form untuk mengubah harga, judul, jam, catatan
  *   - porsi otomatis tidak boleh kurang dari yang sudah dipesan
@@ -530,24 +550,32 @@ function StockCard({ item }: { item: SurplusItem }) {
   );
 }
 
-function Stat({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'green' | 'accent' | 'muted' }) {
-  const color =
-    tone === 'green' ? palette.green : tone === 'accent' ? palette.accent : tone === 'muted' ? palette.textMuted : palette.text;
+function StatCard({ icon, label, value }: { icon: IconName; label: string; value: string }) {
   return (
-    <View style={{ flex: 1 }}>
-      <T tone="muted" style={type.tiny}>{label}</T>
-      <Text style={[styles.statNum, { color }]} numberOfLines={1} adjustsFontSizeToFit>
+    <Card style={{ flex: 1 }}>
+      <IconBadge name={icon} size={20} boxSize={42} />
+      <T tone="muted" style={[type.tiny, { marginTop: spacing.sm }]}>{label.toUpperCase()}</T>
+      <Text style={styles.statNum} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
-  statRow: { flexDirection: 'row', gap: spacing.md },
-  statNum: { fontSize: 18, fontWeight: '700', marginTop: 2, letterSpacing: -0.3 },
-  tabs: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
+  statGrid: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
+  statNum: { fontSize: 19, fontWeight: '700', color: palette.text, marginTop: 3, letterSpacing: -0.4 },
+  segment: {
+    flexDirection: 'row', backgroundColor: palette.grouped, borderRadius: 10,
+    padding: 2, marginTop: spacing.lg,
+  },
+  segmentOpt: { flex: 1, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  segmentOptOn: { backgroundColor: palette.surface },
+  verifyRow: {
+    flexDirection: 'row', gap: spacing.md, alignItems: 'center',
+    paddingVertical: 11, paddingHorizontal: spacing.lg,
+  },
   row: { flexDirection: 'row', gap: spacing.md, alignItems: 'center', justifyContent: 'space-between' },
   thumb: {
     width: 48, height: 48, borderRadius: radius.sm, backgroundColor: palette.surfaceAlt,
@@ -558,13 +586,14 @@ const styles = StyleSheet.create({
   photoPreview: { marginTop: spacing.md, alignItems: 'center' },
   photoImg: { width: '100%', height: 170, borderRadius: radius.sm, borderWidth: 1, borderColor: palette.border },
   /** Tinggi eksplisit: ScrollView horizontal tanpa ini collapse di native. */
-  emojiRow: { height: 52, marginTop: spacing.sm },
+  iconRow: { height: 52, marginTop: spacing.sm },
   iconChoice: {
     width: 46, height: 44, borderRadius: radius.sm, backgroundColor: palette.surface,
     borderWidth: 1, borderColor: palette.border, alignItems: 'center', justifyContent: 'center',
   },
   iconChoiceOn: { backgroundColor: palette.accent, borderColor: palette.accent },
   code: { fontSize: 20, fontWeight: '700', letterSpacing: 2.5, color: palette.accent, marginTop: 2 },
+  codeSm: { fontSize: 17, fontWeight: '700', letterSpacing: 2, color: palette.accent, marginTop: 2 },
   input: {
     height: 42, borderRadius: radius.sm, backgroundColor: palette.surface,
     borderWidth: 1, borderColor: palette.border, paddingHorizontal: spacing.md,
@@ -573,10 +602,14 @@ const styles = StyleSheet.create({
   wrapRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   sheetWrap: { flex: 1, backgroundColor: palette.overlay, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: palette.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg,
-    padding: spacing.lg, maxHeight: '92%',
+    backgroundColor: palette.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.lg, paddingTop: spacing.sm, maxHeight: '92%',
   },
-  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  grabber: {
+    width: 36, height: 5, borderRadius: 3, backgroundColor: palette.separator,
+    alignSelf: 'center', marginBottom: spacing.sm,
+  },
+  sheetTitle: { fontSize: 20, fontWeight: '600', color: palette.text, textAlign: 'center', letterSpacing: -0.3 },
   stokAksi: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     gap: spacing.sm, marginTop: spacing.md, paddingTop: spacing.md,

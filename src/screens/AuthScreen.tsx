@@ -1,5 +1,5 @@
 /**
- * NIRA - layar Masuk / Daftar.
+ * NIRA - layar Masuk / Daftar (gaya iOS).
  *
  * Alur: pilih peran (Konsumen / Penjual) -> isi data -> masuk ke app.
  * Penjual mengisi data usaha saat daftar dan wajib menunggu verifikasi.
@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, Divider, Icon, T } from '../ui';
+import { Button, Chevron, Group, Icon, T } from '../ui';
 import { palette, radius, spacing, type } from '../theme';
 import { DEMO_CONSUMER, DEMO_MERCHANT, useAuth, type BusinessInfo } from '../auth';
 import type { Role } from '../types';
@@ -75,14 +75,16 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Kepala */}
+          {/* Logo */}
           <View style={styles.brand}>
-            <Image
-              source={require('../../assets/icon.png')}
-              style={styles.logoBox}
-              resizeMode="cover"
-              accessibilityLabel="Logo NIRA"
-            />
+            <View style={styles.logoBox}>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={styles.logoImg}
+                resizeMode="cover"
+                accessibilityLabel="Logo NIRA"
+              />
+            </View>
             <Text style={styles.brandName}>NIRA</Text>
             <T tone="muted" style={[type.small, { textAlign: 'center', marginTop: 2 }]}>
               Setiap rasa masih bernilai
@@ -92,8 +94,8 @@ export default function AuthScreen() {
           {/* Pilih peran */}
           <View style={styles.roleRow}>
             {([
-              { key: 'consumer' as Role, label: 'Konsumen', icon: 'account-outline' as const },
-              { key: 'merchant' as Role, label: 'Penjual', icon: 'storefront-outline' as const },
+              { key: 'consumer' as Role, label: 'Konsumen', desc: 'Cari dan pesan makanan', icon: 'account' as const },
+              { key: 'merchant' as Role, label: 'Penjual', desc: 'Jual surplus usaha', icon: 'storefront' as const },
             ]).map((it) => {
               const on = role === it.key;
               return (
@@ -103,153 +105,193 @@ export default function AuthScreen() {
                   onPress={() => { setRole(it.key); setErr(null); }}
                   style={[styles.roleCard, on && styles.roleCardOn]}
                 >
-                  <Icon name={it.icon} size={22} color={on ? '#fff' : palette.textMuted} />
-                  <Text style={[type.bodyStrong, { color: on ? '#fff' : palette.text, marginTop: 4 }]}>
+                  <View style={[styles.roleIcon, on && styles.roleIconOn]}>
+                    <Icon name={it.icon} size={24} color={on ? '#fff' : palette.accent} />
+                  </View>
+                  <Text style={[type.bodyStrong, { color: palette.text, marginTop: 8 }]}>
                     {it.label}
                   </Text>
-                  <Text
-                    style={[
-                      type.tiny,
-                      { color: on ? 'rgba(255,255,255,0.85)' : palette.textDim, marginTop: 1, textAlign: 'center' },
-                    ]}
-                  >
-                    {it.key === 'consumer' ? 'Cari & pesan makanan' : 'Jual surplus usaha'}
+                  <Text style={[type.tiny, { color: palette.textDim, marginTop: 1, textAlign: 'center' }]}>
+                    {it.desc}
+                  </Text>
+                  {on ? (
+                    <View style={styles.roleCheck}>
+                      <Icon name="check-circle" size={18} color={palette.accent} />
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Tab masuk/daftar */}
+          <View style={styles.segment}>
+            {(['signin', 'signup'] as Mode[]).map((m) => {
+              const on = mode === m;
+              return (
+                <Pressable
+                  key={m}
+                  testID={`tab-${m}`}
+                  onPress={() => { setMode(m); setErr(null); }}
+                  style={[styles.segmentOpt, on && styles.segmentOptOn]}
+                >
+                  <Text style={[type.bodyStrong, { color: on ? palette.text : palette.textMuted }]}>
+                    {m === 'signin' ? 'Masuk' : 'Daftar'}
                   </Text>
                 </Pressable>
               );
             })}
           </View>
 
-          <Card style={{ marginTop: spacing.lg }}>
-            {/* Tab masuk/daftar */}
-            <View style={styles.tabs}>
-              {(['signin', 'signup'] as Mode[]).map((m) => {
-                const on = mode === m;
-                return (
-                  <Pressable key={m} testID={`tab-${m}`} onPress={() => { setMode(m); setErr(null); }} style={styles.tab}>
-                    <Text style={[type.bodyStrong, { color: on ? palette.accent : palette.textMuted }]}>
-                      {m === 'signin' ? 'Masuk' : 'Daftar'}
-                    </Text>
-                    {on ? <View style={styles.tabLine} /> : null}
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Divider style={{ marginTop: spacing.sm }} />
-
+          {/* Form dalam sel grup */}
+          <Group style={{ marginTop: spacing.md }}>
             {mode === 'signup' ? (
-              <Field label="Nama lengkap" value={name} onChange={setName} placeholder="cth. Mada" testID="in-name" />
-            ) : null}
-
-            <Field
-              label="Email"
-              value={email}
-              onChange={setEmail}
-              placeholder="nama@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              testID="in-email"
-            />
-
-            <View style={{ marginTop: spacing.md }}>
-              <T tone="muted" style={type.tiny}>KATA SANDI</T>
-              <View style={styles.pwWrap}>
+              <View style={styles.cellInput}>
+                <Text style={styles.cellLabel}>Nama</Text>
                 <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder={mode === 'signup' ? 'minimal 6 karakter' : 'kata sandi kamu'}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="cth. Mada"
                   placeholderTextColor={palette.textDim}
-                  secureTextEntry={!showPw}
-                  autoCapitalize="none"
-                  testID="in-password"
-                  style={styles.pwInput}
+                  testID="in-name"
+                  style={styles.cellField}
                 />
-                <Pressable onPress={() => setShowPw((v) => !v)} hitSlop={8} style={styles.pwEye}>
-                  <Icon name={showPw ? 'eye-off-outline' : 'eye-outline'} size={19} color={palette.textMuted} />
-                </Pressable>
+              </View>
+            ) : null}
+            <View style={styles.cellInput}>
+              <Text style={styles.cellLabel}>Email</Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="nama@email.com"
+                placeholderTextColor={palette.textDim}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                testID="in-email"
+                style={styles.cellField}
+              />
+            </View>
+            <View style={[styles.cellInput, styles.cellLast]}>
+              <Text style={styles.cellLabel}>Sandi</Text>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder={mode === 'signup' ? 'minimal 6 karakter' : 'kata sandi kamu'}
+                placeholderTextColor={palette.textDim}
+                secureTextEntry={!showPw}
+                autoCapitalize="none"
+                testID="in-password"
+                style={[styles.cellField, { flex: 1 }]}
+              />
+              <Pressable onPress={() => setShowPw((v) => !v)} hitSlop={8} style={styles.pwEye}>
+                <Icon name={showPw ? 'eye-off-outline' : 'eye-outline'} size={19} color={palette.textMuted} />
+              </Pressable>
+            </View>
+          </Group>
+
+          {/* Data usaha khusus penjual */}
+          {mode === 'signup' && role === 'merchant' ? (
+            <View style={{ marginTop: spacing.lg }}>
+              <View style={styles.merchantNote}>
+                <Icon name="shield-check-outline" size={17} color={palette.accent} />
+                <T style={[type.tiny, { color: palette.accent, flex: 1 }]}>
+                  Data usaha dipakai untuk verifikasi. Dashboard penjual terbuka setelah disetujui.
+                </T>
+              </View>
+
+              <Group style={{ marginTop: spacing.md }}>
+                <View style={styles.cellInput}>
+                  <Text style={styles.cellLabel}>Usaha</Text>
+                  <TextInput
+                    value={bizName}
+                    onChangeText={setBizName}
+                    placeholder="cth. Warung Bu Sari"
+                    placeholderTextColor={palette.textDim}
+                    testID="in-biz"
+                    style={styles.cellField}
+                  />
+                </View>
+                <View style={styles.cellInput}>
+                  <Text style={styles.cellLabel}>Alamat</Text>
+                  <TextInput
+                    value={bizAddr}
+                    onChangeText={setBizAddr}
+                    placeholder="Jl. ... No. ..., Kota"
+                    placeholderTextColor={palette.textDim}
+                    testID="in-addr"
+                    style={styles.cellField}
+                  />
+                </View>
+                <View style={[styles.cellInput, styles.cellLast]}>
+                  <Text style={styles.cellLabel}>WA</Text>
+                  <TextInput
+                    value={bizPhone}
+                    onChangeText={setBizPhone}
+                    placeholder="08xx-xxxx-xxxx"
+                    placeholderTextColor={palette.textDim}
+                    keyboardType="phone-pad"
+                    testID="in-phone"
+                    style={styles.cellField}
+                  />
+                </View>
+              </Group>
+
+              <T tone="muted" style={[type.tiny, { marginTop: spacing.md }]}>KATEGORI USAHA</T>
+              <View style={styles.catWrap}>
+                {CATEGORIES.map((c) => {
+                  const on = c === bizCat;
+                  return (
+                    <Pressable
+                      key={c}
+                      onPress={() => setBizCat(c)}
+                      style={[styles.cat, on && styles.catOn]}
+                    >
+                      <Text style={[type.tiny, { color: on ? '#fff' : palette.text }]}>{c}</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
+          ) : null}
 
-            {/* Data usaha khusus penjual */}
-            {mode === 'signup' && role === 'merchant' ? (
-              <View style={{ marginTop: spacing.lg }}>
-                <View style={styles.merchantNote}>
-                  <Icon name="shield-check-outline" size={17} color={palette.accent} />
-                  <T style={[type.tiny, { color: palette.accent, flex: 1 }]}>
-                    Data usaha dipakai untuk verifikasi. Dashboard penjual terbuka setelah disetujui.
-                  </T>
-                </View>
+          {err ? (
+            <View style={styles.errBox}>
+              <Icon name="alert-circle-outline" size={16} color={palette.danger} />
+              <T style={[type.small, { color: palette.danger, flex: 1 }]}>{err}</T>
+            </View>
+          ) : null}
 
-                <Field label="Nama usaha" value={bizName} onChange={setBizName} placeholder="cth. Warung Bu Sari" testID="in-biz" />
-
-                <T tone="muted" style={[type.tiny, { marginTop: spacing.md }]}>KATEGORI USAHA</T>
-                <View style={styles.catWrap}>
-                  {CATEGORIES.map((c) => {
-                    const on = c === bizCat;
-                    return (
-                      <Pressable
-                        key={c}
-                        onPress={() => setBizCat(c)}
-                        style={[styles.cat, on && styles.catOn]}
-                      >
-                        <Text style={[type.tiny, { color: on ? '#fff' : palette.text }]}>{c}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-
-                <Field label="Alamat usaha" value={bizAddr} onChange={setBizAddr} placeholder="Jl. ... No. ..., Kota" testID="in-addr" />
-                <Field
-                  label="Nomor WhatsApp usaha"
-                  value={bizPhone}
-                  onChange={setBizPhone}
-                  placeholder="08xx-xxxx-xxxx"
-                  keyboardType="phone-pad"
-                  testID="in-phone"
-                />
-              </View>
-            ) : null}
-
-            {err ? (
-              <View style={styles.errBox}>
-                <Icon name="alert-circle-outline" size={16} color={palette.danger} />
-                <T style={[type.small, { color: palette.danger, flex: 1 }]}>{err}</T>
-              </View>
-            ) : null}
-
-            <Button
-              label={mode === 'signin' ? 'Masuk' : role === 'merchant' ? 'Daftar & ajukan verifikasi' : 'Daftar & mulai'}
-              variant="primary"
-              testID="btn-submit"
-              onPress={submit}
-              style={{ marginTop: spacing.lg }}
-            />
-          </Card>
+          <Button
+            label={mode === 'signin' ? 'Masuk' : role === 'merchant' ? 'Daftar dan ajukan verifikasi' : 'Daftar dan mulai'}
+            variant="blue"
+            testID="btn-submit"
+            onPress={submit}
+            style={{ marginTop: spacing.lg }}
+          />
 
           {/* Akun demo */}
           {mode === 'signin' ? (
-            <Card style={{ marginTop: spacing.md, backgroundColor: palette.surfaceAlt }}>
+            <View style={{ marginTop: spacing.lg }}>
               <T tone="muted" style={[type.tiny, { marginBottom: spacing.sm }]}>COBA CEPAT (AKUN DEMO)</T>
-              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                <Button
-                  label="Konsumen"
-                  icon="account-outline"
-                  variant="secondary"
-                  testID="demo-consumer"
-                  onPress={() => fillDemo('consumer')}
-                  style={{ flex: 1, height: 40 }}
-                />
-                <Button
-                  label="Penjual"
-                  icon="storefront-outline"
-                  variant="secondary"
-                  testID="demo-merchant"
-                  onPress={() => fillDemo('merchant')}
-                  style={{ flex: 1, height: 40 }}
-                />
-              </View>
-            </Card>
+              <Group>
+                <Pressable testID="demo-consumer" onPress={() => fillDemo('consumer')} style={styles.demoRow}>
+                  <Icon name="account-outline" size={20} color={palette.accent} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={type.body}>Masuk sebagai Konsumen</Text>
+                    <Text style={[type.tiny, { color: palette.textDim }]}>konsumen@nira.id</Text>
+                  </View>
+                  <Chevron />
+                </Pressable>
+                <Pressable testID="demo-merchant" onPress={() => fillDemo('merchant')} style={styles.demoRow}>
+                  <Icon name="storefront-outline" size={20} color={palette.accent} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={type.body}>Masuk sebagai Penjual</Text>
+                    <Text style={[type.tiny, { color: palette.textDim }]}>penjual@nira.id</Text>
+                  </View>
+                  <Chevron />
+                </Pressable>
+              </Group>
+            </View>
           ) : null}
 
           <T tone="muted" style={[type.tiny, { textAlign: 'center', marginTop: spacing.lg }]}>
@@ -261,73 +303,47 @@ export default function AuthScreen() {
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  keyboardType,
-  autoCapitalize,
-  testID,
-}: {
-  label: string;
-  value: string;
-  onChange: (s: string) => void;
-  placeholder?: string;
-  keyboardType?: 'default' | 'email-address' | 'phone-pad';
-  autoCapitalize?: 'none' | 'sentences';
-  testID?: string;
-}) {
-  return (
-    <View style={{ marginTop: spacing.md }}>
-      <T tone="muted" style={type.tiny}>{label.toUpperCase()}</T>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={palette.textDim}
-        keyboardType={keyboardType ?? 'default'}
-        autoCapitalize={autoCapitalize ?? 'sentences'}
-        testID={testID}
-        style={styles.input}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   scroll: { padding: spacing.gutter, paddingBottom: spacing.xxl },
   brand: { alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.lg },
   logoBox: {
-    width: 64, height: 64, borderRadius: 18,
+    width: 76, height: 76, borderRadius: 20, backgroundColor: palette.accent,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
-  brandName: { fontSize: 26, fontWeight: '700', color: palette.text, marginTop: spacing.sm, letterSpacing: -0.5 },
+  logoImg: { width: 76, height: 76, borderRadius: 20 },
+  brandName: { fontSize: 34, fontWeight: '700', color: palette.text, marginTop: spacing.sm, letterSpacing: -0.7 },
   roleRow: { flexDirection: 'row', gap: spacing.md },
   roleCard: {
-    flex: 1, borderRadius: radius.md, borderWidth: 1, borderColor: palette.border,
-    backgroundColor: palette.surface, paddingVertical: spacing.md, alignItems: 'center',
+    flex: 1, borderRadius: radius.lg, borderWidth: 1, borderColor: palette.border,
+    backgroundColor: palette.surface, paddingVertical: spacing.lg, alignItems: 'center',
+    position: 'relative',
   },
-  roleCardOn: { backgroundColor: palette.accent, borderColor: palette.accent },
-  tabs: { flexDirection: 'row', gap: spacing.lg },
-  tab: { paddingBottom: spacing.sm },
-  tabLine: { height: 2, backgroundColor: palette.accent, borderRadius: 2, marginTop: 6 },
-  input: {
-    height: 44, borderRadius: radius.sm, backgroundColor: palette.surface,
-    borderWidth: 1, borderColor: palette.border, paddingHorizontal: spacing.md,
-    fontSize: 14, color: palette.text, marginTop: 4,
+  roleCardOn: { borderColor: palette.accent, borderWidth: 1.5 },
+  roleIcon: {
+    width: 48, height: 48, borderRadius: 24, backgroundColor: palette.greenSoft,
+    alignItems: 'center', justifyContent: 'center',
   },
-  pwWrap: {
-    height: 44, borderRadius: radius.sm, backgroundColor: palette.surface, marginTop: 4,
-    borderWidth: 1, borderColor: palette.border, flexDirection: 'row', alignItems: 'center',
-    paddingLeft: spacing.md, paddingRight: 6,
+  roleIconOn: { backgroundColor: palette.accent },
+  roleCheck: { position: 'absolute', top: 8, right: 8 },
+  segment: {
+    flexDirection: 'row', backgroundColor: palette.grouped, borderRadius: 10,
+    padding: 2, marginTop: spacing.lg,
   },
-  pwInput: { flex: 1, fontSize: 14, color: palette.text, height: '100%' },
+  segmentOpt: { flex: 1, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  segmentOptOn: { backgroundColor: palette.surface },
+  cellInput: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    paddingVertical: 4, paddingHorizontal: spacing.lg, minHeight: 48,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: palette.border,
+  },
+  cellLast: { borderBottomWidth: 0 },
+  cellLabel: { width: 52, fontSize: 15, color: palette.textMuted },
+  cellField: { flex: 1, fontSize: 15, color: palette.text, paddingVertical: 10, paddingHorizontal: 0 },
   pwEye: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   merchantNote: {
     flexDirection: 'row', gap: spacing.sm, alignItems: 'center',
-    backgroundColor: palette.accentSoft, borderRadius: radius.sm, padding: spacing.md,
-    borderWidth: 1, borderColor: 'rgba(27,133,68,0.25)',
+    backgroundColor: palette.greenSoft, borderRadius: radius.sm, padding: spacing.md,
   },
   catWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
   cat: {
@@ -338,6 +354,9 @@ const styles = StyleSheet.create({
   errBox: {
     flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: spacing.md,
     backgroundColor: palette.dangerSoft, borderRadius: radius.sm, padding: spacing.md,
-    borderWidth: 1, borderColor: 'rgba(223,63,64,0.25)',
+  },
+  demoRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    paddingVertical: 11, paddingHorizontal: spacing.lg,
   },
 });

@@ -1,14 +1,15 @@
 /**
- * NIRA - layar Jelajahi (konsumen).
+ * NIRA - layar Jelajahi (konsumen), gaya iOS.
  *
- * Alur: cari makanan -> lihat kartu surplus -> buka detail -> pesan.
+ * Mockup F: judul 34px rata kiri, kartu dampak hijau, daftar grup iOS
+ * (foto 60px + nama + harga kanan + chevron), search bar iOS.
  */
 import React, { useMemo, useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Badge, Card, EmptyState, Icon, PressCard, Reveal, ScreenHeader, T } from '../ui';
+import { Badge, Chevron, EmptyState, Icon, LargeTitle, SearchBar, SectionLabel, Stars, T } from '../ui';
 import { angkaDesimal, resolvePhoto, rupiah } from '../data';
-import { palette, radius, spacing, type } from '../theme';
+import { palette, radius, spacing, type, TABBAR_SPACE } from '../theme';
 import { useStore } from '../store';
 import type { SurplusItem } from '../types';
 
@@ -17,33 +18,11 @@ function discountPct(original: number, price: number): number {
   return Math.round(((original - price) / original) * 100);
 }
 
-/** Bintang rating untuk satu penjual = rating dasar + ulasan konsumen. */
-function StarsRow({ rating, count }: { rating: number; count: number }) {
-  const full = Math.round(rating);
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
-      <View style={{ flexDirection: 'row', gap: 1 }}>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <Icon
-            key={i}
-            name={i <= full ? 'star' : 'star-outline'}
-            size={12}
-            color={i <= full ? '#f5a623' : palette.border}
-          />
-        ))}
-      </View>
-      <T tone="muted" style={type.tiny}>{rating.toFixed(1)} ({count})</T>
-    </View>
-  );
-}
-
-function ItemCard({ item, onPress, index }: { item: SurplusItem; onPress: () => void; index: number }) {
+function FoodRow({ item, onPress, first, last }: { item: SurplusItem; onPress: () => void; first?: boolean; last?: boolean }) {
   const { merchantOfId, orders } = useStore();
   const m = merchantOfId(item.merchantId);
-  const left = item.portions;
   const photo = resolvePhoto(item.photo);
 
-  // rating efektif: gabung rating dasar penjual + ulasan dari pesanan selesai
   const reviews = orders.filter((o) => o.merchantId === m.id && o.rated && o.stars);
   const effRating = reviews.length
     ? (m.rating * m.ratingCount + reviews.reduce((n, o) => n + (o.stars ?? 0), 0)) / (m.ratingCount + reviews.length)
@@ -51,44 +30,38 @@ function ItemCard({ item, onPress, index }: { item: SurplusItem; onPress: () => 
   const effCount = m.ratingCount + reviews.length;
 
   return (
-    <Reveal delay={Math.min(index * 45, 260)}>
-      <PressCard testID={`item-${item.id}`} onPress={onPress} style={styles.card}>
-        <View style={styles.cardTop}>
-          <View style={styles.thumb}>
-            {photo ? (
-              <Image source={photo} style={styles.thumbImg} resizeMode="cover" />
-            ) : (
-              <Icon name={item.icon} size={30} color={palette.textMuted} />
-            )}
-          </View>
-          <View style={{ flex: 1 }}>
-            <T style={type.bodyStrong} numberOfLines={2}>{item.title}</T>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
-              <Icon name="storefront-outline" size={13} color={palette.textMuted} />
-              <T tone="muted" style={[type.small, { flex: 1 }]} numberOfLines={1}>
-                {m.name} · {m.distanceKm} km
-              </T>
-            </View>
-            <StarsRow rating={Math.round(effRating * 10) / 10} count={effCount} />
-            <View style={styles.priceRow}>
-              <T style={[type.bodyStrong, { color: palette.accent }]}>{rupiah(item.price)}</T>
-              <Text style={styles.strike}>{rupiah(item.originalPrice)}</Text>
-              <Badge label={`-${discountPct(item.originalPrice, item.price)}%`} tone="green" />
-            </View>
-          </View>
+    <Pressable
+      testID={`item-${item.id}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.row,
+        pressed && { opacity: 0.6 },
+      ]}
+    >
+      {photo ? (
+        <Image source={photo} style={styles.thumb} resizeMode="cover" />
+      ) : (
+        <View style={[styles.thumb, styles.thumbFallback]}>
+          <Icon name={item.icon} size={28} color={palette.textMuted} />
         </View>
-
-        <View style={styles.cardBottom}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Icon name="clock-outline" size={13} color={palette.textMuted} />
-            <T tone="muted" style={type.tiny}>Ambil {item.pickupStart}–{item.pickupEnd}</T>
-          </View>
-          <T tone={left <= 2 ? 'accent' : 'muted'} style={type.tiny}>
-            {left <= 2 ? `Sisa ${left} porsi!` : `${left} porsi`}
-          </T>
+      )}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <T style={type.bodyStrong} numberOfLines={1}>{item.title}</T>
+        <T tone="muted" style={type.caption} numberOfLines={1}>
+          {m.name} · {m.distanceKm} km
+        </T>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+          <Stars value={effRating} />
+          <T tone="muted" style={type.tiny}>{effRating.toFixed(1)} ({effCount})</T>
         </View>
-      </PressCard>
-    </Reveal>
+      </View>
+      <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
+        <Text style={styles.price}>{rupiah(item.price)}</Text>
+        <Text style={styles.strike}>{rupiah(item.originalPrice)}</Text>
+        <Badge label={`-${discountPct(item.originalPrice, item.price)}%`} tone="green" />
+      </View>
+      <Chevron />
+    </Pressable>
   );
 }
 
@@ -96,15 +69,11 @@ export default function ExploreScreen({ onOpenItem }: { onOpenItem: (id: string)
   const { items, merchants, impact } = useStore();
   const insets = useSafeAreaInsets();
   const [q, setQ] = useState('');
-  const [cat, setCat] = useState<string>('Semua');
-
-  const categories = useMemo(() => ['Semua', ...new Set(merchants.map((m) => m.category))], [merchants]);
 
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return items
       .filter((i) => i.isActive && i.portions > 0)
-      .filter((i) => (cat === 'Semua' ? true : i.category === cat))
       .filter((i) => {
         if (!needle) return true;
         const m = merchants.find((x) => x.id === i.merchantId);
@@ -114,122 +83,101 @@ export default function ExploreScreen({ onOpenItem }: { onOpenItem: (id: string)
           (m?.name.toLowerCase().includes(needle) ?? false)
         );
       });
-  }, [items, merchants, q, cat]);
+  }, [items, merchants, q]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="NIRA" subtitle="Setiap rasa masih bernilai" />
+      <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl + insets.bottom + TABBAR_SPACE }}>
+        <LargeTitle title="Jelajahi" />
+        <SearchBar value={q} onChange={setQ} placeholder="Cari makanan atau warung" />
 
-      {/* Kartu dampak - pengingat misi aplikasi */}
-      <View style={{ paddingHorizontal: spacing.gutter }}>
-        <Card style={styles.impactCard}>
+        {/* Kartu dampak hijau */}
+        <View style={styles.impact}>
+          <T style={[type.tiny, { color: 'rgba(255,255,255,0.85)' }]}>PORSI DISELAMATKAN</T>
+          <Text style={styles.impactBig}>{impact.mealsRescued} porsi · {rupiah(impact.moneySaved)}</Text>
+          <Text style={[type.small, { color: 'rgba(255,255,255,0.9)' }]}>
+            {angkaDesimal(impact.co2SavedKg)} kg CO₂ tidak terbuang
+          </Text>
           <View style={styles.impactRow}>
-            <View style={{ flex: 1 }}>
-              <T tone="muted" style={type.tiny}>PORSI DISELAMATKAN</T>
-              <Text style={styles.impactNum}>{impact.mealsRescued}</Text>
-              <T tone="muted" style={type.tiny}>
-                {angkaDesimal(impact.co2SavedKg)} kg CO₂ tidak terbuang
-              </T>
+            <View style={styles.impactMini}>
+              <Text style={styles.impactMiniN}>{angkaDesimal(impact.co2SavedKg)} kg</Text>
+              <Text style={styles.impactMiniL}>CO₂</Text>
             </View>
-            <View style={styles.impactDivider} />
-            <View style={{ flex: 1 }}>
-              <T tone="muted" style={type.tiny}>UANG DIHEMAT</T>
-              <Text style={styles.impactNum}>{rupiah(impact.moneySaved)}</Text>
-              <T tone="muted" style={type.tiny}>
-                dari {impact.ordersCompleted} pesanan selesai
-              </T>
+            <View style={styles.impactMini}>
+              <Text style={styles.impactMiniN}>{rupiah(impact.moneySaved)}</Text>
+              <Text style={styles.impactMiniL}>Dihemat</Text>
+            </View>
+            <View style={styles.impactMini}>
+              <Text style={styles.impactMiniN}>{impact.ordersCompleted}</Text>
+              <Text style={styles.impactMiniL}>Pesanan</Text>
             </View>
           </View>
-        </Card>
-      </View>
+        </View>
 
-      {/* Pencarian */}
-      <View style={{ paddingHorizontal: spacing.gutter, marginTop: spacing.lg }}>
-        <TextInput
-          value={q}
-          onChangeText={setQ}
-          placeholder="Cari makanan atau tempat makan"
-          placeholderTextColor={palette.textDim}
-          style={styles.search}
-        />
-      </View>
+        <SectionLabel text="Terdekat dari kamu" />
 
-      {/* Filter kategori - ScrollView horizontal WAJIB punya tinggi eksplisit,
-          kalau tidak tingginya collapse di Android/iOS dan chip-nya kepotong. */}
-      <View style={styles.chipsWrap}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
-        >
-          {categories.map((c) => {
-            const on = c === cat;
-            return (
-              <PressCard key={c} onPress={() => setCat(c)}>
-                <View style={[styles.chip, on && styles.chipOn]}>
-                  <Text style={[type.small, { color: on ? '#fff' : palette.text, fontWeight: on ? '600' : '400' }]}>
-                    {c}
-                  </Text>
-                </View>
-              </PressCard>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      <FlatList
-        data={list}
-        keyExtractor={(i) => i.id}
-        contentContainerStyle={{ padding: spacing.gutter, paddingBottom: spacing.xxl + insets.bottom }}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-        renderItem={({ item, index }) => (
-          <ItemCard item={item} index={index} onPress={() => onOpenItem(item.id)} />
-        )}
-        ListEmptyComponent={
+        {/* Satu grup iOS: semua baris dalam SATU container putih */}
+        {list.length === 0 ? (
           <EmptyState
             icon="magnify"
             title="Belum ada makanan cocok"
-            body="Coba kata kunci lain atau ganti kategori. Makanan surplus baru muncul menjelang jam tutup."
+            body="Coba kata kunci lain. Makanan surplus baru muncul menjelang jam tutup."
           />
-        }
-      />
+        ) : (
+          <View style={styles.listWrap}>
+            {list.map((item, index) => (
+              <View key={item.id}>
+                {index > 0 ? <View style={styles.rowSep} /> : null}
+                <FoodRow
+                  item={item}
+                  onPress={() => onOpenItem(item.id)}
+                  first={index === 0}
+                  last={index === list.length - 1}
+                />
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
-  card: { backgroundColor: palette.surface, borderRadius: radius.md, borderWidth: 1, borderColor: palette.border, padding: spacing.md },
-  cardTop: { flexDirection: 'row', gap: spacing.md },
-  thumb: {
-    width: 62, height: 62, borderRadius: radius.sm, backgroundColor: palette.surfaceAlt,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: palette.border,
+  impact: {
+    backgroundColor: palette.accent,
+    borderRadius: 16,
+    marginHorizontal: spacing.gutter,
+    marginBottom: spacing.sm,
+    padding: spacing.lg,
+  },
+  impactBig: { fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5, marginVertical: 3 },
+  impactRow: { flexDirection: 'row', gap: 8, marginTop: spacing.md },
+  impactMini: { flex: 1, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 10, padding: 8, alignItems: 'center' },
+  impactMiniN: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  impactMiniL: { fontSize: 10, color: 'rgba(255,255,255,0.85)' },
+  listWrap: {
+    marginHorizontal: spacing.gutter,
+    backgroundColor: palette.surface,
+    borderRadius: radius.lg,
     overflow: 'hidden',
   },
-  thumbImg: { width: '100%', height: '100%' },
-  stars: { fontSize: 14, color: '#f5a623', marginTop: 2 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
-  strike: { fontSize: 12, color: palette.textDim, textDecorationLine: 'line-through' },
-  cardBottom: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: spacing.md, paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.border,
+  row: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.lg,
   },
-  impactCard: { backgroundColor: palette.surface, paddingVertical: spacing.md },
-  impactRow: { flexDirection: 'row', alignItems: 'center' },
-  impactDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: palette.border, marginHorizontal: spacing.md },
-  impactNum: { fontSize: 22, fontWeight: '700', color: palette.text, marginVertical: 1, letterSpacing: -0.4 },
-  search: {
-    height: 42, borderRadius: radius.sm, backgroundColor: palette.surface,
-    borderWidth: 1, borderColor: palette.border, paddingHorizontal: spacing.md,
-    fontSize: 14, color: palette.text,
+  rowSep: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: palette.border,
+    marginLeft: 88,
   },
-  chips: { paddingHorizontal: spacing.gutter, gap: spacing.sm, paddingVertical: 2, alignItems: 'center' },
-  /** Tinggi eksplisit: ScrollView horizontal tanpa ini collapse di native. */
-  chipsWrap: { height: 40, marginTop: spacing.md },
-  chip: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.full,
-    backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.border,
-  },
-  chipOn: { backgroundColor: palette.accent, borderColor: palette.accent },
+  thumb: { width: 60, height: 60, borderRadius: radius.md, backgroundColor: palette.grouped },
+  thumbFallback: { alignItems: 'center', justifyContent: 'center' },
+  price: { fontSize: 15, fontWeight: '700', color: palette.accent },
+  strike: { fontSize: 11.5, color: palette.textDim, textDecorationLine: 'line-through' },
 });
