@@ -275,7 +275,9 @@ export default function AuthScreen() {
               <T tone="muted" style={[type.tiny, { marginBottom: spacing.sm }]}>COBA CEPAT (AKUN DEMO)</T>
               <Group>
                 <Pressable testID="demo-consumer" onPress={() => fillDemo('consumer')} style={styles.demoRow}>
-                  <Icon name="account-outline" size={20} color={palette.accent} />
+                  <View style={styles.demoIcon}>
+                    <Icon name="account-outline" size={21} color={palette.accent} />
+                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={type.body}>Masuk sebagai Konsumen</Text>
                     <Text style={[type.tiny, { color: palette.textDim }]}>konsumen@nira.id</Text>
@@ -283,7 +285,9 @@ export default function AuthScreen() {
                   <Chevron />
                 </Pressable>
                 <Pressable testID="demo-merchant" onPress={() => fillDemo('merchant')} style={styles.demoRow}>
-                  <Icon name="storefront-outline" size={20} color={palette.accent} />
+                  <View style={styles.demoIcon}>
+                    <Icon name="storefront-outline" size={21} color={palette.accent} />
+                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={type.body}>Masuk sebagai Penjual</Text>
                     <Text style={[type.tiny, { color: palette.textDim }]}>penjual@nira.id</Text>
@@ -358,5 +362,8 @@ const styles = StyleSheet.create({
   demoRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     paddingVertical: 11, paddingHorizontal: spacing.lg,
+  },
+  demoIcon: {
+    width: 24, height: 24, alignItems: 'center', justifyContent: 'center',
   },
 });

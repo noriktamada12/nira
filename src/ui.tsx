@@ -23,6 +23,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { motion, palette, radius, spacing, type } from './theme';
 
 /* -------------------------------------------------------------------- Icon */
@@ -103,8 +104,8 @@ export function Stars({
 }
 
 /** Chevron kanan iOS (›) — vektor, bukan karakter teks. */
-export function Chevron({ color = palette.separator }: { color?: string }) {
-  return <Icon name="chevron-right" size={17} color={color} />;
+export function Chevron({ color = palette.textDim }: { color?: string }) {
+  return <Icon name="chevron-right" size={18} color={color} />;
 }
 
 /* --------------------------------------------------------------- Pressable */
@@ -241,13 +242,18 @@ export function ScreenHeader({
 
 /**
  * Grup sel iOS: kartu putih berisi baris-baris + separator hairline otomatis.
+ *
+ * Separator digambar sebagai View garis tersendiri (indent kiri), BUKAN
+ * margin di wrapper — margin di wrapper ikut menggeser isi baris
+ * (ikon jadi tidak sejajar antar-baris).
  */
 export function Group({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
   const kids = React.Children.toArray(children);
   return (
     <View style={[styles.group, style]}>
       {kids.map((k, i) => (
-        <View key={i} style={[i > 0 && styles.groupSep]}>
+        <View key={i}>
+          {i > 0 ? <View style={styles.groupSepLine} /> : null}
           {k}
         </View>
       ))}
@@ -409,8 +415,9 @@ export function TabBar({
   onChange: (k: string) => void;
   badges?: Record<string, number>;
 }) {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.tabbar}>
+    <View style={[styles.tabbar, { paddingBottom: Math.max(10, insets.bottom + 6) }]}>
       {tabs.map((t) => {
         const on = t.key === active;
         const n = badges?.[t.key] ?? 0;
@@ -489,9 +496,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     overflow: 'hidden',
   },
-  groupSep: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: palette.border,
+  groupSepLine: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: palette.border,
     marginLeft: spacing.lg,
   },
   cell: {

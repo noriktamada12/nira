@@ -94,7 +94,7 @@ function ConsumerShell() {
         tabs={[
           { key: 'explore', label: 'Jelajahi', icon: 'compass-outline', iconActive: 'compass' },
           { key: 'orders', label: 'Pesanan', icon: 'bookmark-outline', iconActive: 'bookmark' },
-          { key: 'impact', label: 'Dampak', icon: 'leaf-circle-outline', iconActive: 'leaf' },
+          { key: 'impact', label: 'Dampak', icon: 'sprout-outline', iconActive: 'sprout' },
           { key: 'profile', label: 'Profil', icon: 'account-circle-outline', iconActive: 'account-circle' },
         ]}
         active={tab}

@@ -505,7 +505,7 @@ function StockCard({ item }: { item: SurplusItem }) {
           />
           <Button
             label="Hapus"
-            variant="ghost"
+            variant="danger"
             onPress={() => removeItem(item.id)}
             style={{ height: 34, paddingHorizontal: 10 }}
           />
